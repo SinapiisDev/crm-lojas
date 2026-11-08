@@ -1,6 +1,7 @@
 name: Manter Supabase acordado
 
 # O Supabase grátis pausa o projeto após 7 dias sem uso. Uma leitura por dia evita isso.
+# Atenção: o GitHub desliga agendamentos de repositórios sem atividade há 60 dias (reativar em Actions).
 on:
   schedule:
     - cron: "0 12 * * *"
@@ -13,6 +14,7 @@ jobs:
       - name: Chamar /api/saude
         env:
           SITE: ${{ vars.SITE_URL }}
+          SEGREDO: ${{ secrets.AVISOS_SEGREDO }}
         run: |
-          if [ -z "$SITE" ]; then echo "Defina a variável SITE_URL no repositório."; exit 0; fi
-          curl -fsS "$SITE/api/saude"
+          if [ -z "$SITE" ] || [ -z "$SEGREDO" ]; then echo "Defina a variável SITE_URL e o secret AVISOS_SEGREDO no repositório."; exit 1; fi
+          curl -fsS -H "Authorization: Bearer $SEGREDO" "$SITE/api/saude"

@@ -161,4 +161,28 @@ describe("despacharAvisos", () => {
     expect(await pendente(id)).toBe(true);
     expect(await emailsPara(u.email)).toEqual([]);
   });
+
+  test("TEMPO_MAX_MS vazio ou inválido usa o padrão de 25 s (C1/I5)", async () => {
+    const { tempoMaximo } = await import("@/lib/avisos/despachar");
+    const salvo = process.env.TEMPO_MAX_MS;
+    try {
+      delete process.env.TEMPO_MAX_MS;
+      expect(tempoMaximo()).toBe(25_000);
+      for (const ruim of ["", "8s", "0", "-5"]) {
+        process.env.TEMPO_MAX_MS = ruim;
+        expect(tempoMaximo()).toBe(25_000);
+      }
+      process.env.TEMPO_MAX_MS = "40000";
+      expect(tempoMaximo()).toBe(40_000);
+    } finally {
+      if (salvo === undefined) delete process.env.TEMPO_MAX_MS; else process.env.TEMPO_MAX_MS = salvo;
+    }
+  });
+
+  test("prazo curto (3 s) ainda envia: a margem não engole o prazo todo", async () => {
+    const u = await pessoa("prazoCurto");
+    const id = await aviso(u.id, `PrazoCurto ${sufixo}`);
+    await despacharAvisos({ prazo: Date.now() + 3_000 });
+    expect(await pendente(id)).toBe(false);
+  });
 });

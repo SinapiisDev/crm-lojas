@@ -28,7 +28,7 @@ jobs:
           npx tsc --noEmit
 
       - name: Supabase local
-        run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+        run: npx supabase start -x studio,imgproxy,edge-runtime,supavisor
 
       - name: Variáveis de teste (chaves locais de desenvolvimento, não são segredos)
         run: |

@@ -8,9 +8,16 @@ type Aviso = { id: string; usuario_id: string; titulo: string; texto: string | n
 type Inscricao = { id: string; usuario_id: string; endpoint: string; p256dh: string; auth: string };
 
 const CONFIG = ["VAPID_ASSUNTO", "VAPID_PRIVATE_KEY", "NEXT_PUBLIC_VAPID_PUBLIC_KEY", "SMTP_HOST", "SMTP_PORT", "EMAIL_REMETENTE", "NEXT_PUBLIC_SITE_URL"];
-// Lote pequeno + prazo: cabe numa função serverless (~10 s no Netlify grátis); o resto sai no minuto seguinte.
+// Lote pequeno + prazo: cabe numa função serverless (Netlify: 60 s síncrono); o resto sai no minuto seguinte.
 const LOTE = 10;
-export const tempoMaximo = () => Number(process.env.TEMPO_MAX_MS ?? 8000);
+// Margem para o envio que começa perto do fim (não passar do limite da plataforma no meio de um aviso):
+// até 5 s, mas no máximo 1/5 do prazo, senão um prazo curto nunca enviaria nada.
+const MARGEM_MAX_MS = 5_000;
+// Vazio, texto ou não positivo cai no padrão (valor errado não pode desligar nem destravar o prazo).
+export function tempoMaximo() {
+  const n = Number(process.env.TEMPO_MAX_MS);
+  return n > 0 ? n : 25_000;
+}
 
 // Envia os avisos pendentes: push para quem ativou em algum aparelho; senão, e-mail.
 // `reservar_avisos` marca o lote antes do envio (dois despachos não repetem aviso);
@@ -21,6 +28,7 @@ export async function despacharAvisos({ prazo = Date.now() + tempoMaximo() } = {
   if (faltando.length) throw new Error(`Configuração de avisos incompleta: ${faltando.join(", ")}`);
   setVapidDetails(process.env.VAPID_ASSUNTO!, process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!, process.env.VAPID_PRIVATE_KEY!);
 
+  const margem = Math.max(0, Math.min(MARGEM_MAX_MS, (prazo - Date.now()) / 5));
   const admin = criarClienteAdmin();
   const devolver = (ids: string[]) => admin.from("notificacoes").update({ enviado_em: null }).in("id", ids);
   const { data, error } = await admin.rpc("reservar_avisos", { p_limite: LOTE });
@@ -44,7 +52,7 @@ export async function despacharAvisos({ prazo = Date.now() + tempoMaximo() } = {
   let email = 0;
 
   for (const [n, a] of avisos.entries()) {
-    if (Date.now() > prazo) {
+    if (Date.now() + margem > prazo) {
       falharam.push(...avisos.slice(n).map((x) => x.id)); // sem tempo: volta para a fila
       break;
     }
