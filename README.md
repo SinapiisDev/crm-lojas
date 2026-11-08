@@ -42,4 +42,6 @@ npm run e2e     # navegador (Playwright com o Chrome instalado; sobe o app sozin
    Faltando qualquer uma das de push/e-mail, o despacho recusa rodar (os avisos ficam na fila, nada se perde).
 3. **E-mail**: conta grátis no Resend, domínio verificado, SMTP conforme `.env.example`.
 4. **Push**: só funciona em HTTPS. No iPhone, o CRM precisa estar adicionado à Tela de Início.
-5. **Login Google** (opcional): credencial OAuth no Google Cloud e ativar o provedor Google no Supabase.
+5. **IA** (opcional): chave em console.anthropic.com (créditos pré-pagos) em `ANTHROPIC_API_KEY` e o modelo em `AI_MODEL`.
+   Sem os dois, a IA fica desligada (sem temperatura, sugestão e resumo semanal) e o resto funciona igual.
+6. **Login Google** (opcional): credencial OAuth no Google Cloud e ativar o provedor Google no Supabase.
