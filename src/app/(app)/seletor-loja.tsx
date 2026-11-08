@@ -1,10 +1,13 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useTransition } from "react";
 import { trocarLoja } from "./acoes-loja";
 
 export function SeletorLoja({ lojas, atual }: { lojas: { id: string; nome: string }[]; atual: string }) {
   const [pendente, iniciar] = useTransition();
+  // O painel tem filtro de loja próprio (inclui "Todas"); dois seletores na mesma tela confundem.
+  if (usePathname().startsWith("/painel")) return null;
   if (lojas.length < 2) return <span className="text-sm font-medium">{lojas[0]?.nome}</span>;
   return (
     <select

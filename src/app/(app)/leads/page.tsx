@@ -1,4 +1,4 @@
-import { AoVivo } from "@/components/leads/ao-vivo";
+import { AoVivo } from "@/components/comum/ao-vivo";
 import { NovoLead } from "@/components/leads/novo-lead";
 import { Quadro } from "@/components/leads/quadro";
 import type { LeadResumo } from "@/components/leads/card-lead";
@@ -41,7 +41,7 @@ export default async function PaginaLeads() {
         <NovoLead vendedores={vendedores} />
       </div>
       <Quadro leads={resumo} diasLimite={lojaAtual.dias_lead_parado} mostrarVendedor={gere} />
-      <AoVivo lojaId={lojaAtual.id} />
+      <AoVivo tabela="leads" lojaId={lojaAtual.id} />
     </div>
   );
 }

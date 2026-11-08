@@ -14,7 +14,7 @@ export async function entrar(_: Estado, form: FormData): Promise<Estado> {
     password: String(form.get("senha") ?? ""),
   });
   if (error) return { erro: "E-mail ou senha incorretos." };
-  redirect("/leads");
+  redirect("/");
 }
 
 export async function entrarComGoogle() {
@@ -43,7 +43,7 @@ export async function definirSenha(_: Estado, form: FormData): Promise<Estado> {
   const supabase = await criarClienteServidor();
   const { error } = await supabase.auth.updateUser({ password: senha });
   if (error) return { erro: "Não foi possível salvar a senha. Abra o link do e-mail de novo." };
-  redirect("/leads");
+  redirect("/");
 }
 
 export async function sair() {

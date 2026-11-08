@@ -5,15 +5,17 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const ITENS = [
+  { href: "/painel", titulo: "Painel", soGestor: true },
   { href: "/leads", titulo: "Leads" },
+  { href: "/tarefas", titulo: "Tarefas" },
   { href: "/equipe", titulo: "Equipe" },
 ];
 
-export function Menu() {
+export function Menu({ gestor }: { gestor: boolean }) {
   const caminho = usePathname();
   return (
     <nav className="flex gap-1">
-      {ITENS.map((i) => (
+      {ITENS.filter((i) => gestor || !i.soGestor).map((i) => (
         <Link
           key={i.href}
           href={i.href}
