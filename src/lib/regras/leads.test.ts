@@ -51,6 +51,9 @@ describe("linkWhatsApp", () => {
       "https://wa.me/5511988887777?text=Oi%20Paulo%2C%20tudo%20bem%3F",
     );
   });
+  test("tira o 0 do DDD digitado como (011) (I3)", () => {
+    expect(linkWhatsApp("(011) 98888-7777")).toBe("https://wa.me/5511988887777");
+  });
   test("número curto demais é inválido", () => {
     expect(linkWhatsApp("123")).toBeNull();
   });

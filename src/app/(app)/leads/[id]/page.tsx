@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { BotaoWhatsApp } from "@/components/leads/botao-whatsapp";
 import { MudarEtapa } from "@/components/leads/mudar-etapa";
 import { RegistrarContato } from "@/components/leads/registrar-contato";
@@ -24,17 +25,8 @@ export default async function PaginaLead({ params }: PageProps<"/leads/[id]">) {
       ])
     : [{ data: null }, { data: null }];
 
-  // Inexistente ou de outra pessoa (RLS esconde): mesma resposta.
-  if (!lead) {
-    return (
-      <div className="mx-auto max-w-2xl py-10 text-center">
-        <p className="font-medium">Lead não encontrado</p>
-        <Link href="/leads" className="text-sm underline">
-          Voltar para os leads
-        </Link>
-      </div>
-    );
-  }
+  // Inexistente ou de outra pessoa (RLS esconde): mesma resposta 404.
+  if (!lead) notFound();
 
   const zap = linkWhatsApp(lead.telefone, `Oi ${lead.nome.split(" ")[0]}, tudo bem?`);
   const vendedor = (lead.perfis as unknown as { nome: string } | null)?.nome;

@@ -36,7 +36,8 @@ export function leadParado(
 }
 
 export function linkWhatsApp(telefone: string, texto?: string): string | null {
-  let numero = telefone.replace(/\D/g, "");
+  // "(011) 9..." -> tira o 0 de longa distância antes do DDD.
+  let numero = telefone.replace(/\D/g, "").replace(/^0+/, "");
   if (numero.length === 10 || numero.length === 11) numero = "55" + numero;
   if (numero.length < 12 || numero.length > 13) return null;
   return `https://wa.me/${numero}` + (texto ? `?text=${encodeURIComponent(texto)}` : "");

@@ -18,6 +18,14 @@ export async function convidar(_: EstadoConvite, form: FormData): Promise<Estado
   if (!nome) return { erro: "Informe o nome." };
   if (!CARGOS.includes(cargo)) return { erro: "Escolha o cargo." };
 
+  const { data: jaMembro } = await supabase
+    .from("membros")
+    .select("perfis!inner(email)")
+    .eq("loja_id", lojaAtual.id)
+    .eq("perfis.email", email)
+    .maybeSingle();
+  if (jaMembro) return { erro: "Essa pessoa já faz parte desta loja." };
+
   // O banco (RLS) decide se este cargo pode convidar para esta loja.
   const { data: convite, error } = await supabase
     .from("convites")

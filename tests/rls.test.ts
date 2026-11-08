@@ -154,3 +154,62 @@ describe("regras de etapa no banco", () => {
     expect(error?.message).toMatch(/check/i);
   });
 });
+
+describe("correções da revisão", () => {
+  test("estranho não toma convite pendente via signUp público (C1)", async () => {
+    const email = `alvo-${sufixo}@teste.local`;
+    await admin.from("convites").insert({ email, loja_id: loja1, cargo: "gerente" });
+    const anonimo = createClient(url, publica, { auth: { persistSession: false } });
+    const { data, error } = await anonimo.auth.signUp({ email, password: "senha-do-intruso-1" });
+    expect(error).not.toBeNull();
+    expect(data.user).toBeNull();
+  });
+
+  test("gerente não rebaixa o dono por convite (C2)", async () => {
+    const { data: perfil } = await admin.from("perfis").select("email").eq("id", dono.id).single();
+    await gerente.cliente.from("convites").insert({ email: perfil!.email, loja_id: loja1, cargo: "vendedor" });
+    const { data } = await admin.from("membros").select("cargo").eq("usuario_id", dono.id).eq("loja_id", loja1).single();
+    expect(data!.cargo).toBe("dono");
+  });
+
+  test("membro não altera o próprio e-mail no perfil (C3)", async () => {
+    const { error } = await vendA.cliente
+      .from("perfis")
+      .update({ email: `novo-${sufixo}@teste.local` })
+      .eq("id", vendA.id);
+    expect(error).not.toBeNull();
+  });
+
+  test("membro altera o próprio nome", async () => {
+    const { error } = await vendA.cliente.from("perfis").update({ nome: "Venda Nova" }).eq("id", vendA.id);
+    expect(error).toBeNull();
+  });
+
+  test("vendedora não troca empresa do lead nem joga contato para o futuro (I1)", async () => {
+    const { data: outra } = await admin.from("empresas").insert({ nome: `Outra ${sufixo}` }).select("id").single();
+    const futuro = new Date(Date.now() + 30 * 86_400_000).toISOString();
+    await vendA.cliente
+      .from("leads")
+      .update({ empresa_id: outra!.id, ultimo_contato_em: futuro })
+      .eq("nome", `lead-a-${sufixo}`);
+    const { data } = await admin.from("leads").select("empresa_id, ultimo_contato_em").eq("nome", `lead-a-${sufixo}`).single();
+    expect(data!.empresa_id).not.toBe(outra!.id);
+    expect(new Date(data!.ultimo_contato_em).getTime()).toBeLessThanOrEqual(Date.now() + 5000);
+  });
+
+  test("sair de Vendido limpa o valor vendido (I2)", async () => {
+    const nome = `lead-a-${sufixo}`;
+    await gerente.cliente.from("leads").update({ etapa: "vendido", valor_vendido: 999 }).eq("nome", nome);
+    await gerente.cliente.from("leads").update({ etapa: "negociacao" }).eq("nome", nome);
+    const { data } = await admin.from("leads").select("valor_vendido").eq("nome", nome).single();
+    expect(data!.valor_vendido).toBeNull();
+  });
+
+  test("sair de Perdido limpa o motivo (I2)", async () => {
+    const nome = `lead-a-${sufixo}`;
+    await gerente.cliente.from("leads").update({ etapa: "perdido", motivo_perda: "Preço" }).eq("nome", nome);
+    await gerente.cliente.from("leads").update({ etapa: "negociacao" }).eq("nome", nome);
+    const { data } = await admin.from("leads").select("motivo_perda").eq("nome", nome).single();
+    expect(data!.motivo_perda).toBeNull();
+  });
+});

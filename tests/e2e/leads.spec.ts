@@ -119,7 +119,8 @@ test("vendedora não abre lead da colega pela URL", async ({ page }) => {
   const daColega = await leadNoBanco(loja1, b.id);
   await entrar(page, a.email);
   await expect(coluna(page, "Novo").getByText(daColega.nome)).toHaveCount(0);
-  await page.goto(`/leads/${daColega.id}`);
+  const resposta = await page.goto(`/leads/${daColega.id}`);
+  expect(resposta?.status()).toBe(404);
   await expect(page.getByText("Lead não encontrado")).toBeVisible();
   await expect(page.getByText(daColega.nome)).toHaveCount(0);
 });

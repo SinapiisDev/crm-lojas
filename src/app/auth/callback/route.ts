@@ -10,6 +10,10 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) return NextResponse.redirect(`${origin}/leads`);
   }
-  const semConvite = (searchParams.get("error_description") ?? "").includes("saving new user");
+  // Conta inexistente: cadastro desligado (signup_disabled) ou trigger de convite recusou.
+  const codigo = searchParams.get("error_code") ?? "";
+  const descricao = searchParams.get("error_description") ?? "";
+  const semConvite =
+    codigo === "signup_disabled" || codigo === "unexpected_failure" || /saving new user|signups not allowed/i.test(descricao);
   return NextResponse.redirect(`${origin}/login?erro=${semConvite ? "convite" : "google"}`);
 }

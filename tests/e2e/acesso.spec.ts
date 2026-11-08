@@ -41,6 +41,11 @@ test("dona convida pela tela de equipe; vendedora não vê o formulário", async
   await expect(page.getByRole("status")).toContainText(`Convite enviado para ${email}`);
   await expect(page.getByText(email, { exact: true })).toBeVisible();
 
+  await page.getByLabel("Nome").fill("De Novo");
+  await page.getByLabel("E-mail").fill(email);
+  await page.getByRole("button", { name: "Convidar" }).click();
+  await expect(page.getByText("Essa pessoa já faz parte desta loja.")).toBeVisible();
+
   await page.getByRole("button", { name: "Sair" }).click();
   const vendedora = await criarUsuario("Vend", [[loja1, "vendedor"]]);
   await entrar(page, vendedora.email);
