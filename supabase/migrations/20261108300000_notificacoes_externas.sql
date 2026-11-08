@@ -29,6 +29,8 @@ grant select, delete on push_inscricoes to authenticated;
 alter table notificacoes
   add column enviado_em timestamptz,
   add column chave text unique;
+-- O que já existe ficou só no sino: não dispara push/e-mail atrasado na primeira publicação.
+update notificacoes set enviado_em = now() where enviado_em is null;
 create index notificacoes_pendentes on notificacoes (criado_em) where enviado_em is null;
 
 -- Aviso com chave: repetir a mesma chave não cria outro (rotina pode rodar de novo no mesmo dia).

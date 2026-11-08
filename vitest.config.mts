@@ -12,5 +12,6 @@ export default defineConfig({
       "server-only": path.resolve(import.meta.dirname, "tests/server-only-vazio.ts"),
     },
   },
-  test: { environment: "node", testTimeout: 20000, exclude: ["node_modules", "tests/e2e/**"] },
+  // Um arquivo por vez: testes de avisos reservam a fila global e não podem disputar entre si.
+  test: { environment: "node", testTimeout: 20000, fileParallelism: false, exclude: ["node_modules", "tests/e2e/**"] },
 });

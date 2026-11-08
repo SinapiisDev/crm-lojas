@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { removerInscricao, salvarInscricao } from "@/app/(app)/avisos/actions";
 
-type Estado = "carregando" | "sem-suporte" | "ios-instalar" | "bloqueado" | "inativo" | "ativo";
+type Estado = "carregando" | "sem-suporte" | "ios-instalar" | "bloqueado" | "inativo" | "ativo" | "erro";
 
 function chaveVapid(base64: string) {
   const b64 = (base64 + "=".repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
@@ -39,7 +39,10 @@ export function AtivarNotificacoes() {
       });
       const r = await salvarInscricao(inscricao.toJSON());
       if (r.erro) await inscricao.unsubscribe();
-      setEstado(r.erro ? "inativo" : "ativo");
+      setEstado(r.erro ? "sem-suporte" : "ativo");
+    } catch (e) {
+      console.error("ativar notificações falhou", e);
+      setEstado("erro");
     } finally {
       setOcupado(false);
     }
@@ -67,10 +70,14 @@ export function AtivarNotificacoes() {
         </Button>
       </div>
     );
-  if (estado === "inativo")
+  if (estado === "inativo" || estado === "erro")
     return (
       <div className={caixa}>
-        <span>Receba os avisos no celular, mesmo com o CRM fechado.</span>
+        <span>
+          {estado === "erro"
+            ? "Não foi possível ativar agora. Tente de novo em instantes."
+            : "Receba os avisos no celular, mesmo com o CRM fechado."}
+        </span>
         <Button size="sm" disabled={ocupado} onClick={ativar}>
           Ativar notificações neste aparelho
         </Button>

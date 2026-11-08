@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CRM Lojas
 
-## Getting Started
+Leads (kanban), tarefas por pessoa com Cobrar, painel da dona e avisos (sino, push e e-mail) para as lojas.
+Next.js 16 + Supabase. Design e planos em `docs/superpowers/`.
 
-First, run the development server:
+## Rodar no computador
+
+Pré-requisitos: Node 22+, Docker em execução.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local        # preencha com os valores do passo abaixo
+npm run db:start                  # sobe o Supabase local e mostra as chaves
+npm run db:reset                  # cria tabelas e as 2 lojas
+npm run criar-dono -- voce@email.com "Seu Nome"
+npm run dev                       # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- E-mails (convite, senha, avisos) caem no Mailpit: http://127.0.0.1:54324
+- Painel do banco: http://127.0.0.1:54323
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Testes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test        # regras e acesso no banco (Vitest; exige db:start)
+npm run e2e     # navegador (Playwright com o Chrome instalado; sobe o app sozinho)
+```
 
-## Learn More
+## Publicar (produção)
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Supabase online**
+   - Criar projeto; rodar as migrations (`npx supabase link` + `npx supabase db push`).
+   - Authentication → Sign In / Providers: **desligar "Allow new users to sign up"** (conta só nasce por convite).
+   - Authentication → Emails: copiar `supabase/templates/convite.html` (Invite) e `recuperar-senha.html` (Reset password).
+   - Authentication → URL Configuration: Site URL = endereço do CRM; Redirect URLs = `<site>/auth/callback`.
+   - SQL Editor, segredos do despacho de avisos (mesmo segredo de `AVISOS_SEGREDO`):
+     ```sql
+     select vault.create_secret('https://SEU-SITE/api/avisos/despachar', 'avisos_url');
+     select vault.create_secret('UM-SEGREDO-LONGO-E-ALEATORIO', 'avisos_segredo');
+     ```
+2. **Variáveis de ambiente** no provedor (Cloudflare/Netlify): todas as de `.env.example`, com valores de produção.
+   Faltando qualquer uma das de push/e-mail, o despacho recusa rodar (os avisos ficam na fila, nada se perde).
+3. **E-mail**: conta grátis no Resend, domínio verificado, SMTP conforme `.env.example`.
+4. **Push**: só funciona em HTTPS. No iPhone, o CRM precisa estar adicionado à Tela de Início.
+5. **Login Google** (opcional): credencial OAuth no Google Cloud e ativar o provedor Google no Supabase.

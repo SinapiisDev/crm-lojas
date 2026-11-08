@@ -40,9 +40,17 @@ async function inscrever(usuario_id: string, caminho: string) {
 }
 
 async function aviso(usuario_id: string, titulo: string) {
-  const { error } = await admin.from("notificacoes").insert({ usuario_id, loja_id: loja, titulo, texto: "detalhe", link: "/tarefas" });
+  const { data, error } = await admin
+    .from("notificacoes")
+    .insert({ usuario_id, loja_id: loja, titulo, texto: "detalhe", link: "/tarefas" })
+    .select("id")
+    .single();
   if (error) throw error;
+  return data.id as string;
 }
+
+const pendente = async (id: string) =>
+  (await admin.from("notificacoes").select("enviado_em").eq("id", id).single()).data?.enviado_em === null;
 
 async function emailsPara(email: string) {
   const r = await fetch(`http://127.0.0.1:54324/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`);
@@ -118,5 +126,31 @@ describe("despacharAvisos", () => {
     await despacharAvisos();
     await new Promise((ok) => setTimeout(ok, 800));
     expect(recebidos.filter((r) => r === `/ok/${u.id}`).length).toBe(1);
+  });
+
+  test("sem configuração não reserva nada (C1a)", async () => {
+    const u = await pessoa("semConfig");
+    const id = await aviso(u.id, `SemConfig ${sufixo}`);
+    const salvo = process.env.VAPID_PRIVATE_KEY;
+    delete process.env.VAPID_PRIVATE_KEY;
+    try {
+      await expect(despacharAvisos()).rejects.toThrow(/VAPID_PRIVATE_KEY/);
+    } finally {
+      process.env.VAPID_PRIVATE_KEY = salvo;
+    }
+    expect(await pendente(id)).toBe(true);
+  });
+
+  test("e-mail que falha volta para a fila (C1b)", async () => {
+    const u = await pessoa("smtpFora");
+    const id = await aviso(u.id, `SmtpFora ${sufixo}`);
+    const salvo = process.env.SMTP_PORT;
+    process.env.SMTP_PORT = "1";
+    try {
+      await despacharAvisos();
+    } finally {
+      process.env.SMTP_PORT = salvo;
+    }
+    expect(await pendente(id)).toBe(true);
   });
 });

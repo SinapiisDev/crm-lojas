@@ -7,6 +7,9 @@ describe("endpointPermitido", () => {
     expect(endpointPermitido("https://web.push.apple.com/QGx")).toBe(true);
     expect(endpointPermitido("https://updates.push.services.mozilla.com/wpush/v2/x")).toBe(true);
     expect(endpointPermitido("https://wns2-by3p.notify.windows.com/w/?token=x")).toBe(true);
+    expect(endpointPermitido("https://fcm.push.samsungosp.com/x")).toBe(true);
+    expect(endpointPermitido("https://web.push.samsungcloud.com/x")).toBe(true);
+    expect(endpointPermitido("https://android.googleapis.com/gcm/send/x")).toBe(true);
   });
   test("recusa http, rede interna e imitações", () => {
     expect(endpointPermitido("http://fcm.googleapis.com/x")).toBe(false);
