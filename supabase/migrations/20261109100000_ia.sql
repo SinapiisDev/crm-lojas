@@ -109,6 +109,7 @@ select cron.schedule('ia-diaria', '45 10 * * *', $job$
     body := '{}'::jsonb,
     timeout_milliseconds := 60000
   )
-  where exists (select 1 from vault.decrypted_secrets where name = 'avisos_url')
-    and exists (select 1 from vault.decrypted_secrets where name = 'avisos_segredo')
+  where exists (select 1 from vault.decrypted_secrets where name = 'avisos_segredo')
+    -- Só se a URL termina no despacho; senão o replace não troca e cairia no despacho em vez da IA.
+    and exists (select 1 from vault.decrypted_secrets where name = 'avisos_url' and decrypted_secret like '%/api/avisos/despachar')
 $job$);

@@ -13,6 +13,7 @@ function atualizar(id?: string, analisar = false) {
   revalidatePath("/leads");
   if (id) revalidatePath(`/leads/${id}`);
   // Com a IA ligada, reanalisa o lead depois de responder ao usuário (desligada: não faz nada).
+  // Melhor esforço: se a função for encerrada antes, a rotina diária cobre os parados.
   if (id && analisar) after(() => atualizarLeadIA(id).then(() => {}).catch((e) => console.error("IA após ação falhou", e)));
 }
 
@@ -67,7 +68,8 @@ export async function moverLead(
   const detalhe =
     etapa === "vendido" ? ` (${formatarMoeda(extras.valorVendido)})` : etapa === "perdido" ? ` (${extras.motivoPerda!.trim()})` : "";
   await supabase.from("lead_eventos").insert({ lead_id: id, tipo: "etapa", texto: titulo + detalhe, autor_id: usuario.id });
-  atualizar(id, true);
+  // Vendido/perdido: não há conversa a retomar, não gasta chamada.
+  atualizar(id, etapa !== "vendido" && etapa !== "perdido");
   return { ok: true };
 }
 

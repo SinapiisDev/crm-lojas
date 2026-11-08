@@ -7,11 +7,14 @@ export type PedidoIA<T> = { sistema: string; conteudo: string; formato: z.ZodTyp
 // Nunca lança: falha, recusa ou saída inválida viram null (a ação do usuário segue sem IA).
 export type ModeloIA = <T>(pedido: PedidoIA<T>) => Promise<T | null>;
 
-// Ligada só com modelo escolhido (AI_MODEL) e chave; a escolha do modelo é da dona.
-export const iaLigada = () => !!process.env.AI_MODEL && !!process.env.ANTHROPIC_API_KEY;
+// Ligada só com um modelo válido em AI_MODEL e chave; a escolha do modelo é da dona.
+// Nome errado (ex.: "claude-opus-5.5") desliga em vez de falhar calado em toda chamada.
+export const MODELOS = ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"];
+export const iaLigada = () => MODELOS.includes(process.env.AI_MODEL ?? "") && !!process.env.ANTHROPIC_API_KEY;
 
 export function modeloAnthropic(): ModeloIA {
-  const cliente = new Anthropic();
+  // Padrão do SDK é 10 min e 2 novas tentativas: uma chamada travada comeria a rotina inteira.
+  const cliente = new Anthropic({ timeout: 20_000, maxRetries: 1 });
   return async <T,>({ sistema, conteudo, formato }: PedidoIA<T>): Promise<T | null> => {
     try {
       const r = await cliente.messages.parse({

@@ -149,8 +149,21 @@ export async function rotinaIA(hoje: string, modelo?: ModeloIA): Promise<{ leads
     .filter((l) => !l.ia_em || l.ia_em < l.ultimo_contato_em || Date.parse(l.ia_em) < tresDias)
     .slice(0, MAX_LEADS_POR_ROTINA);
 
-  let leads = 0;
-  for (const l of fila) if (await atualizarLeadIA(l.id, modelo)) leads++;
+  // Segunda: o resumo da dona vem primeiro, para não ficar sem tempo atrás das análises.
   const segunda = new Date(hoje + "T12:00:00Z").getUTCDay() === 1;
-  return { leads, resumos: segunda ? await gerarResumosSemanais(hoje, modelo) : 0 };
+  const resumos = segunda ? await gerarResumosSemanais(hoje, modelo) : 0;
+
+  // Chave vencida, sem crédito ou API fora: 3 falhas seguidas e para (nada de 50 chamadas inúteis).
+  let leads = 0;
+  let falhasSeguidas = 0;
+  for (const l of fila) {
+    if (await atualizarLeadIA(l.id, modelo)) {
+      leads++;
+      falhasSeguidas = 0;
+    } else if (++falhasSeguidas >= 3) {
+      console.error("rotina da IA: 3 falhas seguidas, parando");
+      break;
+    }
+  }
+  return { leads, resumos };
 }

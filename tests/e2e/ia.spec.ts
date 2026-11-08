@@ -21,6 +21,7 @@ test("lead analisado mostra temperatura, resumo e WhatsApp com a sugestão", asy
     .insert({
       loja_id: loja.id, vendedor_id: v.id, nome: `Paulo ${sufixo()}`, telefone: "11988887777", etapa: "negociacao",
       temperatura: "quente", resumo_ia: "Quer parcelar; pediu retorno até sexta.", sugestao_ia: sugestao,
+      ia_em: new Date(Date.now() + 60_000).toISOString(),
     })
     .select("id, nome")
     .single();
@@ -56,4 +57,39 @@ test("painel mostra o resumo da semana quando existe", async ({ page }) => {
   await admin.from("resumos_semanais").insert({ loja_id: loja.id, semana_inicio: hojeSP(), texto: "Semana forte: 7 vendas." });
   await page.reload();
   await expect(page.getByRole("region", { name: "Resumo da semana" }).getByText("Semana forte: 7 vendas.")).toBeVisible();
+});
+
+test("sugestão feita antes do último contato não aparece (já foi usada)", async ({ page }) => {
+  const loja = await lojaNova("Velha");
+  const v = await criarUsuario(`Vend ${sufixo()}`, [[loja.id, "vendedor"]]);
+  const { data } = await admin
+    .from("leads")
+    .insert({
+      loja_id: loja.id, vendedor_id: v.id, nome: `Velha ${sufixo()}`, telefone: "11988887777", etapa: "negociacao",
+      sugestao_ia: "Oi! Mensagem antiga.", ia_em: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+    })
+    .select("id, nome")
+    .single();
+  await entrar(page, v.email, undefined, `/leads/${data!.id}`);
+  await expect(page.getByText(data!.nome)).toBeVisible();
+  await expect(page.getByRole("region", { name: "Sugestão da IA" })).toHaveCount(0);
+});
+
+test("lead vendido não mostra sugestão nem temperatura", async ({ page }) => {
+  const loja = await lojaNova("Vendido");
+  const v = await criarUsuario(`Vend ${sufixo()}`, [[loja.id, "vendedor"]]);
+  const { data } = await admin
+    .from("leads")
+    .insert({
+      loja_id: loja.id, vendedor_id: v.id, nome: `Fechado ${sufixo()}`, telefone: "11988887777", etapa: "vendido", valor_vendido: 100,
+      temperatura: "quente", sugestao_ia: "Oi! Vamos retomar?", ia_em: new Date(Date.now() + 60_000).toISOString(),
+    })
+    .select("id, nome")
+    .single();
+  await entrar(page, v.email);
+  const card = page.getByRole("region", { name: "Vendido" }).getByRole("link", { name: new RegExp(data!.nome) });
+  await expect(card).toBeVisible();
+  await expect(card.getByText("Quente")).toHaveCount(0);
+  await page.goto(`/leads/${data!.id}`);
+  await expect(page.getByRole("region", { name: "Sugestão da IA" })).toHaveCount(0);
 });

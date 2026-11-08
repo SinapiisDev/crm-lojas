@@ -165,4 +165,35 @@ describe("núcleo da IA", () => {
     expect(pedidos).toHaveLength(50);
     expect(pedidos.some((p) => p.conteudo.includes(`Fresco ${sufixo}`))).toBe(false);
   });
+
+  test("na segunda o resumo da semana sai antes das análises de leads (C1)", async () => {
+    const { modelo, pedidos } = modeloFalso({ texto: "Resumo de segunda.", ...resposta });
+    await rotinaIA("2026-11-16", modelo);
+    expect(pedidos[0].sistema).toContain("resumo semanal");
+  });
+
+  test("modelo inválido deixa a IA desligada (I2)", async () => {
+    const { iaLigada } = await import("@/lib/ia/modelo");
+    const antes = { m: process.env.AI_MODEL, k: process.env.ANTHROPIC_API_KEY };
+    process.env.ANTHROPIC_API_KEY = "sk-teste";
+    try {
+      process.env.AI_MODEL = "claude-opus-5.5";
+      expect(iaLigada()).toBe(false);
+      process.env.AI_MODEL = "claude-haiku-5-5";
+      expect(iaLigada()).toBe(true);
+    } finally {
+      if (antes.m === undefined) delete process.env.AI_MODEL; else process.env.AI_MODEL = antes.m;
+      if (antes.k === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = antes.k;
+    }
+  });
+
+  test("rotina para depois de 3 falhas seguidas da IA (I3)", async () => {
+    await admin.from("leads").insert(
+      Array.from({ length: 6 }, (_, i) => ({ loja_id: loja, vendedor_id: vend.id, nome: `falha-${i}-${sufixo}`, etapa: "negociacao", ultimo_contato_em: tresDiasAtras() })),
+    );
+    const { modelo, pedidos } = modeloFalso(null);
+    const r = await rotinaIA("2026-11-10", modelo);
+    expect(r.leads).toBe(0);
+    expect(pedidos).toHaveLength(3);
+  });
 });
