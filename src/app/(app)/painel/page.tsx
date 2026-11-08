@@ -106,12 +106,13 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
     return `/painel${q.size ? "?" + q : ""}`;
   };
   const filtro = (ativo: boolean) =>
-    cn("rounded-full border px-3 py-1 text-xs", ativo ? "border-primary bg-primary text-primary-foreground" : "bg-background");
+    cn("rounded-full px-3.5 py-1.5 text-xs font-medium shadow-card", ativo ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted");
+  const geral = linhas[linhas.length - 1]; // total (ou a própria loja, quando é uma só)
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <h1 className="text-xl font-semibold">Painel</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Painel</h1>
         <p className="text-sm text-muted-foreground">
           {ddmm(p.inicio)} a {ddmm(p.fim)} · comparado com os {p.dias} dias anteriores
         </p>
@@ -142,6 +143,35 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
           Muitos registros no período: os números abaixo podem estar incompletos. Avise o suporte.
         </p>
       )}
+
+      <section aria-label="Visão geral" className="rounded-3xl bg-primary p-6 text-primary-foreground shadow-card-hover">
+        <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
+          <div>
+            <p className="text-5xl font-semibold tracking-tight">{geral.novos}</p>
+            <p className="mt-1 text-sm text-primary-foreground/60">leads novos</p>
+          </div>
+          <div>
+            <p className="text-5xl font-semibold tracking-tight">{geral.vendidos}</p>
+            <p className="mt-1 text-sm text-primary-foreground/60">vendidos · {geral.conversao}%</p>
+          </div>
+          <div>
+            <p className="text-3xl font-semibold tracking-tight">{formatarMoeda(geral.valorVendido)}</p>
+            <p className="mt-1 text-sm text-primary-foreground/60">valor vendido</p>
+          </div>
+        </div>
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          {[
+            { n: geral.parados, rotulo: "Leads parados" },
+            { n: atrasadas.length, rotulo: "Tarefas atrasadas" },
+            { n: (reunioes ?? []).filter((r) => situacaoReuniao(r) === "sem_registro").length, rotulo: "Reuniões sem ata" },
+          ].map((x) => (
+            <div key={x.rotulo} className="rounded-2xl bg-primary-foreground/10 p-3 text-center">
+              <p className="text-2xl font-semibold">{x.n}</p>
+              <p className="text-xs text-primary-foreground/60">{x.rotulo}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {!!resumos?.length && (
         <Bloco titulo="Resumo da semana">

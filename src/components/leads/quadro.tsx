@@ -11,10 +11,11 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { useOptimistic, useRef, useState, useTransition } from "react";
+import { useId, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import { moverLead } from "@/app/(app)/leads/actions";
 import { ETAPAS, type Etapa } from "@/lib/regras/leads";
+import { CabecalhoColuna, estiloColuna, estiloQuadro } from "@/components/comum/quadro";
 import { cn } from "@/lib/utils";
 import { CardLead, type LeadResumo } from "./card-lead";
 import { DialogoEtapa, type Extras } from "./dialogo-etapa";
@@ -25,10 +26,12 @@ export function Quadro({
   leads: iniciais,
   diasLimite,
   mostrarVendedor,
+  rodapeNovo,
 }: {
   leads: LeadResumo[];
   diasLimite: number;
   mostrarVendedor: boolean;
+  rodapeNovo?: ReactNode; // "+ Adicionar lead" no fim da coluna Novo
 }) {
   // Movimento aparece na hora; se o servidor recusar, volta sozinho ao fim da transição.
   const [leads, moverNaTela] = useOptimistic(iniciais, (ls, m: { id: string; etapa: Etapa }) =>
@@ -38,6 +41,7 @@ export function Quadro({
   const [pendente, setPendente] = useState<Pendente | null>(null);
   const [, iniciar] = useTransition();
   const acabouDeArrastar = useRef(false);
+  const idDnd = useId(); // ids estáveis entre servidor e navegador (evita erro de hidratação do dnd-kit)
 
   const sensores = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -67,9 +71,9 @@ export function Quadro({
   const emArraste = leads.find((l) => l.id === arrastando);
 
   return (
-    <DndContext sensors={sensores} onDragStart={(e) => setArrastando(String(e.active.id))} onDragEnd={aoSoltar} onDragCancel={() => setArrastando(null)}>
+    <DndContext id={idDnd} sensors={sensores} onDragStart={(e) => setArrastando(String(e.active.id))} onDragEnd={aoSoltar} onDragCancel={() => setArrastando(null)}>
       <div
-        className="flex snap-x gap-3 overflow-x-auto pb-4"
+        className={estiloQuadro}
         onClickCapture={(e) => acabouDeArrastar.current && e.preventDefault()}
       >
         {ETAPAS.map((etapa) => {
@@ -81,12 +85,17 @@ export function Quadro({
                   <CardLead lead={l} diasLimite={diasLimite} mostrarVendedor={mostrarVendedor} />
                 </Arrastavel>
               ))}
+              {etapa.id === "novo" && rodapeNovo}
             </Coluna>
           );
         })}
       </div>
       <DragOverlay>
-        {emArraste && <CardLead lead={emArraste} diasLimite={diasLimite} mostrarVendedor={mostrarVendedor} />}
+        {emArraste && (
+          <div className="rotate-2 cursor-grabbing">
+            <CardLead lead={emArraste} diasLimite={diasLimite} mostrarVendedor={mostrarVendedor} />
+          </div>
+        )}
       </DragOverlay>
       <DialogoEtapa
         etapa={pendente?.etapa ?? null}
@@ -100,21 +109,12 @@ export function Quadro({
   );
 }
 
-function Coluna({ id, titulo, total, children }: { id: Etapa; titulo: string; total: number; children: React.ReactNode }) {
+function Coluna({ id, titulo, total, children }: { id: Etapa; titulo: string; total: number; children: ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
-    <section
-      ref={setNodeRef}
-      aria-label={titulo}
-      className={cn(
-        "flex w-72 shrink-0 snap-start flex-col gap-2 rounded-xl bg-muted p-2 transition-colors",
-        isOver && "bg-primary/10 ring-2 ring-primary/30",
-      )}
-    >
-      <h2 className="flex justify-between px-1 text-sm font-semibold">
-        {titulo} <span className="text-muted-foreground">{total}</span>
-      </h2>
-      <div className="flex min-h-24 flex-col gap-2">{children}</div>
+    <section ref={setNodeRef} aria-label={titulo} className={cn(estiloColuna, "transition-shadow", isOver && "ring-2 ring-primary/40")}>
+      <CabecalhoColuna titulo={titulo} total={total} />
+      <div className="flex min-h-20 flex-col gap-2">{children}</div>
     </section>
   );
 }

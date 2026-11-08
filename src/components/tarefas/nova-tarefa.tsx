@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { criarTarefa, type Resultado } from "@/app/(app)/tarefas/actions";
 import { RECORRENCIAS } from "@/lib/regras/tarefas";
 
-const campoSelect = "h-8 rounded-md border bg-background px-2 text-sm";
+const campoSelect = "h-9 rounded-xl border border-input bg-card px-3 text-sm";
 
 export function NovaTarefa({ pessoas, hoje }: { pessoas: { id: string; nome: string }[] | null; hoje: string }) {
   const [aberto, setAberto] = useState(false);

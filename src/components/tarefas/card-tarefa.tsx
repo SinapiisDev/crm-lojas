@@ -1,5 +1,6 @@
+import { Check, Clock, Repeat } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { Etiqueta, estiloCard } from "@/components/comum/quadro";
 import { situacaoPrazo, textoPrazo, type Recorrencia, type StatusTarefa } from "@/lib/regras/tarefas";
 import { cn } from "@/lib/utils";
 
@@ -13,35 +14,35 @@ export type TarefaResumo = {
   responsavel_id: string;
 };
 
-const BORDA = {
-  atrasada: "border-l-4 border-l-destructive",
-  hoje: "border-l-4 border-l-amber-500",
-  amanha: "border-l-4 border-l-amber-500",
-  ok: "",
-  feita: "opacity-60",
-};
-
 export function CardTarefa({ tarefa, hoje }: { tarefa: TarefaResumo; hoje: string }) {
   const situacao = situacaoPrazo(tarefa.prazo, tarefa.status, hoje);
+  const etiquetas = [
+    situacao === "atrasada" && <Etiqueta key="a" cor="vermelho">Atrasada</Etiqueta>,
+    (situacao === "hoje" || situacao === "amanha") && (
+      <Etiqueta key="h" cor="ambar">
+        {situacao === "hoje" ? "Hoje" : "Amanhã"}
+      </Etiqueta>
+    ),
+    tarefa.status === "fazendo" && <Etiqueta key="f" cor="preto">Fazendo</Etiqueta>,
+    tarefa.prazo_pedido && <Etiqueta key="p" cor="ambar">Prazo pedido</Etiqueta>,
+    tarefa.recorrencia && (
+      <Etiqueta key="r">
+        <Repeat className="size-3" aria-hidden /> Recorrente
+      </Etiqueta>
+    ),
+  ].filter(Boolean);
+
   return (
-    <Link
-      href={`/tarefas/${tarefa.id}`}
-      className={cn("block rounded-lg border bg-card p-3 text-sm shadow-xs transition hover:shadow-sm", BORDA[situacao])}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <span className={cn("font-medium", situacao === "feita" && "line-through")}>
-          {situacao === "feita" && "✓ "}
-          {tarefa.titulo}
-        </span>
-        {tarefa.status === "fazendo" && <Badge variant="secondary">Fazendo</Badge>}
-      </div>
-      <div className="mt-1 flex flex-wrap gap-x-2 text-xs">
-        <span className={cn(situacao === "atrasada" ? "text-destructive" : "text-muted-foreground")}>
-          {textoPrazo(tarefa.prazo, tarefa.status, hoje)}
-        </span>
-        {tarefa.recorrencia && <span className="text-muted-foreground">↻ recorrente</span>}
-        {tarefa.prazo_pedido && <span className="text-amber-700">prazo pedido</span>}
-      </div>
+    <Link href={`/tarefas/${tarefa.id}`} className={cn(estiloCard, situacao === "feita" && "bg-card/60 shadow-none")}>
+      {etiquetas.length > 0 && <div className="mb-2 flex flex-wrap gap-1">{etiquetas}</div>}
+      <p className={cn("leading-snug font-medium", situacao === "feita" && "text-muted-foreground line-through")}>
+        {situacao === "feita" && <Check className="mr-1 inline size-3.5 text-sucesso" aria-label="Feita" />}
+        {tarefa.titulo}
+      </p>
+      <p className={cn("mt-2 flex items-center gap-1 text-xs", situacao === "atrasada" ? "font-medium text-destructive" : "text-muted-foreground")}>
+        <Clock className="size-3.5" aria-hidden />
+        {textoPrazo(tarefa.prazo, tarefa.status, hoje)}
+      </p>
     </Link>
   );
 }

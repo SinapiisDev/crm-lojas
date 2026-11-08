@@ -27,7 +27,7 @@ export function FormularioConvite({ podeConvidarDono }: { podeConvidarDono: bool
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="cargo">Cargo</Label>
-        <select id="cargo" name="cargo" className="h-8 rounded-md border bg-background px-2 text-sm" defaultValue="vendedor">
+        <select id="cargo" name="cargo" className="h-9 rounded-xl border border-input bg-card px-3 text-sm" defaultValue="vendedor">
           {CARGOS.filter((c) => podeConvidarDono || c.id !== "dono").map((c) => (
             <option key={c.id} value={c.id}>
               {c.titulo}

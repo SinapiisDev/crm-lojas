@@ -46,41 +46,58 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --color-sucesso: var(--sucesso);
+  --color-atencao: var(--atencao);
+  --color-info: var(--info);
+  --color-lista: var(--lista);
+  --shadow-card: var(--sombra-card);
+  --shadow-card-hover: var(--sombra-card-hover);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* CRM Lojas — monocromático (ref. iDraft): fundo cinza claro, superfícies brancas, preto para destaque.
+     Cor só com significado: vermelho = atrasado/parado, âmbar = atenção, verde = feito/vendido, azul = reunião. */
+  --background: oklch(0.935 0.002 286);
+  --foreground: oklch(0.2 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.2 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.2 0 0);
+  --primary: oklch(0.22 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --secondary: oklch(0.955 0.001 286);
+  --secondary-foreground: oklch(0.22 0 0);
+  --muted: oklch(0.955 0.001 286);
+  --muted-foreground: oklch(0.53 0.004 286);
+  --accent: oklch(0.955 0.001 286);
+  --accent-foreground: oklch(0.22 0 0);
+  --destructive: oklch(0.58 0.22 27);
+  --border: oklch(0.9 0.002 286);
+  --input: oklch(0.9 0.002 286);
+  --ring: oklch(0.55 0 0);
+  --chart-1: oklch(0.22 0 0);
+  --chart-2: oklch(0.45 0 0);
+  --chart-3: oklch(0.62 0 0);
+  --chart-4: oklch(0.75 0 0);
+  --chart-5: oklch(0.87 0 0);
+  --radius: 0.875rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.2 0 0);
+  --sidebar-primary: oklch(0.22 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-accent: oklch(0.955 0.001 286);
+  --sidebar-accent-foreground: oklch(0.22 0 0);
+  --sidebar-border: oklch(0.9 0.002 286);
+  --sidebar-ring: oklch(0.55 0 0);
+
+  /* Semânticas */
+  --sucesso: oklch(0.6 0.13 155);
+  --atencao: oklch(0.75 0.15 75);
+  --info: oklch(0.55 0.15 255);
+  /* Quadro estilo Trello */
+  --lista: oklch(0.965 0.001 286);
+  --sombra-card: 0 1px 2px oklch(0 0 0 / 6%), 0 1px 1px oklch(0 0 0 / 4%);
+  --sombra-card-hover: 0 6px 16px oklch(0 0 0 / 9%);
 }
 
 .dark {
@@ -123,6 +140,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Brilho suave ao fundo, como na referência (sem imagem). */
+    background-image:
+      radial-gradient(60rem 40rem at 85% -10%, oklch(1 0 0 / 70%), transparent 60%),
+      radial-gradient(50rem 35rem at -10% 110%, oklch(1 0 0 / 55%), transparent 60%);
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;

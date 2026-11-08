@@ -60,6 +60,6 @@ test("dona troca de loja no seletor", async ({ page }) => {
   await entrar(page, dona.email);
   await page.goto("/equipe");
   await expect(page.getByRole("heading", { name: "Equipe · Loja 1" })).toBeVisible();
-  await page.getByLabel("Loja").selectOption({ label: "Loja 2" });
+  await page.getByRole("combobox", { name: "Loja" }).selectOption({ label: "Loja 2" });
   await expect(page.getByRole("heading", { name: "Equipe · Loja 2" })).toBeVisible();
 });

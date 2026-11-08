@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 // Caixa com título do painel; `region` com nome para leitor de tela e testes.
 export function Bloco({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
-    <section aria-label={titulo} className="rounded-xl border bg-card p-4">
-      <h2 className="mb-3 text-sm font-semibold">{titulo}</h2>
+    <section aria-label={titulo} className="rounded-3xl bg-card p-5 shadow-card">
+      <h2 className="mb-4 text-base font-semibold tracking-tight">{titulo}</h2>
       {children}
     </section>
   );

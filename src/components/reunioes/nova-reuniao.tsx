@@ -42,7 +42,7 @@ export function NovaReuniao({ pessoas, hoje, eu }: { pessoas: { id: string; nome
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="r-duracao">Duração</Label>
-                <select id="r-duracao" name="duracao" defaultValue="60" className="h-8 rounded-md border bg-background px-2 text-sm">
+                <select id="r-duracao" name="duracao" defaultValue="60" className="h-9 rounded-xl border border-input bg-card px-3 text-sm">
                   <option value="30">30 min</option>
                   <option value="60">1 h</option>
                   <option value="90">1h30</option>

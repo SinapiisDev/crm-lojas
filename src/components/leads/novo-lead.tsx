@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,9 +9,15 @@ import { Label } from "@/components/ui/label";
 import { criarLead, type Resultado } from "@/app/(app)/leads/actions";
 import { ORIGENS } from "@/lib/regras/leads";
 
-const campoSelect = "h-8 rounded-md border bg-background px-2 text-sm";
+const campoSelect = "h-9 rounded-xl border border-input bg-card px-3 text-sm";
 
-export function NovoLead({ vendedores }: { vendedores: { id: string; nome: string }[] | null }) {
+export function NovoLead({
+  vendedores,
+  gatilho = "botao",
+}: {
+  vendedores: { id: string; nome: string }[] | null;
+  gatilho?: "botao" | "rodape";
+}) {
   const [aberto, setAberto] = useState(false);
   const [estado, enviar, enviando] = useActionState<Resultado, FormData>(async (anterior, form) => {
     const r = await criarLead(anterior, form);
@@ -20,7 +27,19 @@ export function NovoLead({ vendedores }: { vendedores: { id: string; nome: strin
 
   return (
     <>
-      <Button onClick={() => setAberto(true)}>Novo lead</Button>
+      {gatilho === "botao" ? (
+        <Button onClick={() => setAberto(true)}>
+          <Plus aria-hidden /> Novo lead
+        </Button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAberto(true)}
+          className="flex items-center gap-1.5 rounded-2xl px-2 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+        >
+          <Plus className="size-4" aria-hidden /> Adicionar lead
+        </button>
+      )}
       <Dialog open={aberto} onOpenChange={setAberto}>
         <DialogContent>
           <DialogHeader>

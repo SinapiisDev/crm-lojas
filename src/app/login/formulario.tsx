@@ -13,7 +13,7 @@ export function FormularioLogin({ erroInicial }: { erroInicial?: string }) {
   const [estado, enviar, enviando] = modo === "entrar" ? login : recuperar;
 
   return (
-    <div className="w-full max-w-sm rounded-2xl bg-card p-6 shadow-sm ring-1 ring-border">
+    <div className="w-full max-w-sm rounded-3xl bg-card p-7 shadow-card-hover">
       <h1 className="text-lg font-semibold">{modo === "entrar" ? "Entrar" : "Esqueci a senha"}</h1>
       <p className="mb-5 text-sm text-muted-foreground">
         {modo === "entrar"
