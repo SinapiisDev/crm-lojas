@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Lint e tipos
+        run: |
+          npx eslint .
+          npx next typegen
+          npx tsc --noEmit
+
+      - name: Supabase local
+        run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+
+      - name: Variáveis de teste (chaves locais de desenvolvimento, não são segredos)
+        run: |
+          npx supabase status -o env > /tmp/sb.env
+          source /tmp/sb.env
+          VAPID=$(node --input-type=module -e "import {generateVAPIDKeys} from 'web-push'; const k=generateVAPIDKeys(); console.log(k.publicKey+' '+k.privateKey)")
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY"
+            echo "SUPABASE_SECRET_KEY=$SECRET_KEY"
+            echo "NEXT_PUBLIC_SITE_URL=http://localhost:3000"
+            echo "NEXT_PUBLIC_VAPID_PUBLIC_KEY=${VAPID% *}"
+            echo "VAPID_PRIVATE_KEY=${VAPID#* }"
+            echo "VAPID_ASSUNTO=mailto:avisos@crm-lojas.app"
+            echo "SMTP_HOST=127.0.0.1"
+            echo "SMTP_PORT=54325"
+            echo 'EMAIL_REMETENTE="CRM Lojas <avisos@crm-lojas.app>"'
+            echo "AVISOS_SEGREDO=segredo-local-avisos"
+          } > .env.local
+
+      - name: Testes de regras e banco
+        run: npm test
+
+      - name: Testes no navegador
+        run: npm run e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright
+          path: test-results/
+          retention-days: 7
