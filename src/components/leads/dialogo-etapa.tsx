@@ -58,7 +58,7 @@ export function DialogoEtapa({
             <>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="motivo">Motivo da perda</Label>
-                <select id="motivo" name="motivo" className="h-8 rounded-md border bg-background px-2 text-sm" defaultValue="">
+                <select id="motivo" name="motivo" className="h-9 rounded-xl border border-input bg-card px-3 text-sm" defaultValue="">
                   <option value="" disabled>
                     Escolha
                   </option>

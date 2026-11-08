@@ -15,7 +15,7 @@ export function MudarStatus({ id, status, pode }: { id: string; status: StatusTa
       </label>
       <select
         id="status"
-        className="h-9 rounded-md border bg-background px-2 text-sm"
+        className="h-9 rounded-xl border border-input bg-card px-3 text-sm"
         value={atual}
         disabled={!pode || salvando}
         onChange={(e) => {

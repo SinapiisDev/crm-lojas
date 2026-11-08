@@ -37,10 +37,15 @@ export default async function PaginaLeads() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Leads · {lojaAtual.nome}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Leads · {lojaAtual.nome}</h1>
         <NovoLead vendedores={vendedores} />
       </div>
-      <Quadro leads={resumo} diasLimite={lojaAtual.dias_lead_parado} mostrarVendedor={gere} />
+      <Quadro
+        leads={resumo}
+        diasLimite={lojaAtual.dias_lead_parado}
+        mostrarVendedor={gere}
+        rodapeNovo={<NovoLead vendedores={vendedores} gatilho="rodape" />}
+      />
       <AoVivo tabela="leads" lojaId={lojaAtual.id} />
     </div>
   );

@@ -30,7 +30,7 @@ export function MudarEtapa({ id, etapa }: { id: string; etapa: Etapa }) {
       </label>
       <select
         id="etapa"
-        className="h-9 rounded-md border bg-background px-2 text-sm"
+        className="h-9 rounded-xl border border-input bg-card px-3 text-sm"
         value={atual}
         disabled={salvando}
         onChange={(e) => {

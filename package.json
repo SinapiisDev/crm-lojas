@@ -11,7 +11,8 @@
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "criar-dono": "node --env-file=.env.local scripts/criar-dono.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "demo": "node --env-file=.env.local scripts/dados-demo.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",

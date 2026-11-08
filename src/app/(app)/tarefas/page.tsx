@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { AoVivo } from "@/components/comum/ao-vivo";
+import { CabecalhoColuna, estiloColuna, estiloQuadro } from "@/components/comum/quadro";
+import { AdicionarTarefa } from "@/components/tarefas/adicionar-tarefa";
 import { CardTarefa, type TarefaResumo } from "@/components/tarefas/card-tarefa";
 import { NovaTarefa } from "@/components/tarefas/nova-tarefa";
 import { CardReuniao } from "@/components/reunioes/card-reuniao";
@@ -67,15 +69,16 @@ export default async function PaginaTarefas({ searchParams }: PageProps<"/tarefa
     return `/tarefas${p.size ? "?" + p : ""}`;
   };
   const filtro = (ativo: boolean) =>
-    cn("rounded-full border px-3 py-1 text-xs", ativo ? "border-primary bg-primary text-primary-foreground" : "bg-background");
+    cn("rounded-full px-3.5 py-1.5 text-xs font-medium shadow-card", ativo ? "bg-primary text-primary-foreground" : "bg-card hover:bg-muted");
+  const gere = podeGerir(lojaAtual.cargo);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Tarefas · {lojaAtual.nome}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Tarefas · {lojaAtual.nome}</h1>
         <div className="flex gap-2">
-          {podeGerir(lojaAtual.cargo) && <NovaReuniao pessoas={pessoas} hoje={hoje} eu={usuario.id} />}
-          <NovaTarefa pessoas={podeGerir(lojaAtual.cargo) ? pessoas : null} hoje={hoje} />
+          {gere && <NovaReuniao pessoas={pessoas} hoje={hoje} eu={usuario.id} />}
+          <NovaTarefa pessoas={gere ? pessoas : null} hoje={hoje} />
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -86,22 +89,23 @@ export default async function PaginaTarefas({ searchParams }: PageProps<"/tarefa
           {esconderFeitas ? "Mostrar feitas" : "Esconder feitas"}
         </Link>
       </div>
-      <div className="flex snap-x gap-3 overflow-x-auto pb-4">
+      <div className={estiloQuadro}>
         {colunas.map((p) => {
           const daPessoa = ordenar(p.id ? lista.filter((t) => t.responsavel_id === p.id) : semDono);
           return (
-            <section key={p.id} aria-label={p.nome} className="flex w-72 shrink-0 snap-start flex-col gap-2 rounded-xl bg-muted p-2">
-              <h2 className="flex justify-between px-1 text-sm font-semibold">
-                {p.id === usuario.id ? `${p.nome} (você)` : p.nome}
-                <span className="text-muted-foreground">{daPessoa.filter((t) => t.status !== "feito").length}</span>
-              </h2>
-              <div className="flex min-h-24 flex-col gap-2">
+            <section key={p.id} aria-label={p.nome} className={estiloColuna}>
+              <CabecalhoColuna
+                titulo={p.id === usuario.id ? `${p.nome} (você)` : p.nome}
+                total={daPessoa.filter((t) => t.status !== "feito").length}
+              />
+              <div className="flex min-h-20 flex-col gap-2">
                 {p.id &&
                   reunioesDe(p.id).map((r) => <CardReuniao key={r.id} id={r.id} titulo={r.titulo} inicio={r.inicio} />)}
                 {daPessoa.map((t) => (
                   <CardTarefa key={t.id} tarefa={t} hoje={hoje} />
                 ))}
               </div>
+              {p.id && (gere || p.id === usuario.id) && <AdicionarTarefa responsavelId={p.id} />}
             </section>
           );
         })}

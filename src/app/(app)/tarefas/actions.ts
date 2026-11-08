@@ -83,3 +83,12 @@ export async function decidirNovoPrazo(id: string, aprovar: boolean): Promise<Re
   atualizar(id);
   return { ok: true };
 }
+
+// "+ Adicionar tarefa" no fim da coluna: só o título; vence hoje e fica com a pessoa da coluna.
+export async function criarTarefaRapida(responsavelId: string, titulo: string): Promise<Resultado> {
+  const form = new FormData();
+  form.set("titulo", titulo);
+  form.set("prazo", hojeSP());
+  form.set("responsavel_id", responsavelId);
+  return criarTarefa({}, form);
+}

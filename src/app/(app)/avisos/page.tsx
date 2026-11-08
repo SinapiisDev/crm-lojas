@@ -18,7 +18,7 @@ export default async function PaginaAvisos() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-3">
-      <h1 className="text-xl font-semibold">Avisos</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Avisos</h1>
       <AtivarNotificacoes />
       {token && <LinkAgenda endereco={`${process.env.NEXT_PUBLIC_SITE_URL}/agenda/${token}.ics`} />}
       {!avisos?.length && <p className="text-muted-foreground">Nenhum aviso por enquanto.</p>}

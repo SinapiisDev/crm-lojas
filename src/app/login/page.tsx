@@ -11,7 +11,7 @@ const ERROS: Record<string, string> = {
 export default async function PaginaLogin({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
   const { erro } = await searchParams;
   return (
-    <main className="flex min-h-svh flex-col bg-muted md:flex-row">
+    <main className="flex min-h-svh flex-col md:flex-row">
       <Marca />
       <div className="flex flex-1 items-start justify-center p-4 md:items-center md:p-8">
         <FormularioLogin erroInicial={erro ? ERROS[erro] : undefined} />

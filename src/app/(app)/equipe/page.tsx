@@ -18,7 +18,7 @@ export default async function PaginaEquipe() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <h1 className="text-xl font-semibold">Equipe · {lojaAtual.nome}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Equipe · {lojaAtual.nome}</h1>
 
       {gere && (
         <Card>
