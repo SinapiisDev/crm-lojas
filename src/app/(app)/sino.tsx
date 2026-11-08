@@ -40,7 +40,8 @@ export function Sino({ usuarioId }: { usuarioId: string }) {
 
   const rotulo = naoLidos ? `Avisos: ${naoLidos} ${naoLidos === 1 ? "não lido" : "não lidos"}` : "Avisos";
   return (
-    <Link href="/avisos" aria-label={rotulo} className="relative rounded-md p-1.5 hover:bg-muted">
+    // Abrir /avisos marca tudo como lido; sem prefetch para um hover não "ler" os avisos.
+    <Link href="/avisos" prefetch={false} aria-label={rotulo} className="relative rounded-md p-1.5 hover:bg-muted">
       <Bell className="size-5" aria-hidden />
       {naoLidos > 0 && (
         <span aria-hidden className="absolute -top-0.5 -right-0.5 min-w-4 rounded-full bg-destructive px-1 text-center text-[10px] font-semibold text-white">

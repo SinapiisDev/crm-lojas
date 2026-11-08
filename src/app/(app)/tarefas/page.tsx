@@ -41,6 +41,9 @@ export default async function PaginaTarefas({ searchParams }: PageProps<"/tarefa
     .map((m) => m.perfis as unknown as { id: string; nome: string })
     .sort((a, b) => (a.id === usuario.id ? -1 : b.id === usuario.id ? 1 : a.nome.localeCompare(b.nome)));
   const lista = (tarefas ?? []) as TarefaResumo[];
+  // Quem saiu da loja some de `membros`, mas as tarefas dela continuam; ficam numa coluna à parte.
+  const semDono = lista.filter((t) => !pessoas.some((p) => p.id === t.responsavel_id));
+  const colunas = [...pessoas, ...(semDono.length ? [{ id: "", nome: "Saíram da loja" }] : [])];
   const ordenar = (ts: TarefaResumo[]) => [...ts].sort((a, b) => Number(a.status === "feito") - Number(b.status === "feito"));
 
   const link = (mudanca: Record<string, string>) => {
@@ -66,8 +69,8 @@ export default async function PaginaTarefas({ searchParams }: PageProps<"/tarefa
         </Link>
       </div>
       <div className="flex snap-x gap-3 overflow-x-auto pb-4">
-        {pessoas.map((p) => {
-          const daPessoa = ordenar(lista.filter((t) => t.responsavel_id === p.id));
+        {colunas.map((p) => {
+          const daPessoa = ordenar(p.id ? lista.filter((t) => t.responsavel_id === p.id) : semDono);
           return (
             <section key={p.id} aria-label={p.nome} className="flex w-72 shrink-0 snap-start flex-col gap-2 rounded-xl bg-muted p-2">
               <h2 className="flex justify-between px-1 text-sm font-semibold">

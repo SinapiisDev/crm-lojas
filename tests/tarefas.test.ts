@@ -183,3 +183,50 @@ describe("avisos", () => {
     expect((await avisos(vendB)).every((a) => a.lida_em)).toBe(true);
   });
 });
+
+describe("correções da revisão", () => {
+  const anonimo = () => createClient(url, publica, { auth: { persistSession: false } });
+
+  test("sem login não chama avisar nem pedir_novo_prazo (C1/C2)", async () => {
+    const { data: t } = await tarefa(gerente, { titulo: `anon-${sufixo}`, responsavel_id: vendA.id });
+    const pedido = await anonimo().rpc("pedir_novo_prazo", { p_tarefa: t!.id, p_prazo: somarDias(hoje, 5), p_motivo: "x" });
+    expect(pedido.error).not.toBeNull();
+    const { data } = await admin.from("tarefas").select("prazo_pedido").eq("id", t!.id).single();
+    expect(data!.prazo_pedido).toBeNull();
+    const aviso = await anonimo().rpc("avisar", { p_usuario: vendB.id, p_loja: loja1, p_titulo: "x", p_texto: "x", p_link: "x" });
+    expect(aviso.error).not.toBeNull();
+  });
+
+  test("usuário logado não manda aviso falso (C3)", async () => {
+    const { error } = await vendA.cliente.rpc("avisar", {
+      p_usuario: vendB.id, p_loja: loja1, p_titulo: `falso-${sufixo}`, p_texto: "Clique", p_link: "https://evil.example",
+    });
+    expect(error).not.toBeNull();
+    expect((await avisos(vendB)).some((a) => a.titulo === `falso-${sufixo}`)).toBe(false);
+  });
+
+  test("sem login não consulta funções auxiliares (C1)", async () => {
+    expect((await anonimo().rpc("membro_da_loja", { p_usuario: vendA.id, p_loja: loja1 })).error).not.toBeNull();
+  });
+
+  test("recorrente_de emprestado é ignorado na criação (I1)", async () => {
+    const { data: original } = await tarefa(gerente, { titulo: `rec-${sufixo}`, responsavel_id: vendA.id, recorrencia: "diaria" });
+    const { data: intrusa } = await tarefa(vendB, { titulo: "intrusa", responsavel_id: vendB.id, recorrente_de: original!.id });
+    expect(intrusa!.recorrente_de).toBeNull();
+    await vendA.cliente.from("tarefas").update({ status: "feito" }).eq("id", original!.id);
+    const { data } = await admin.from("tarefas").select("id").eq("recorrente_de", original!.id);
+    expect(data).toHaveLength(1);
+  });
+
+  test("pedido de prazo em tarefa criada pela própria pessoa avisa a gerência (I2)", async () => {
+    const { data: t } = await tarefa(vendA, { titulo: `propria-${sufixo}`, responsavel_id: vendA.id });
+    await vendA.cliente.rpc("pedir_novo_prazo", { p_tarefa: t!.id, p_prazo: somarDias(hoje, 3), p_motivo: `motivo-${sufixo}` });
+    expect((await avisos(gerente)).some((a) => a.texto?.includes(`motivo-${sufixo}`))).toBe(true);
+  });
+
+  test("ninguém grava direto em eventos e avisos (I5)", async () => {
+    const { data: t } = await tarefa(gerente, { titulo: "ev", responsavel_id: vendA.id });
+    const r = await vendA.cliente.from("tarefa_eventos").insert({ tarefa_id: t!.id, tipo: "cobranca", texto: "falsa" });
+    expect(r.error?.code).toBe("42501");
+  });
+});

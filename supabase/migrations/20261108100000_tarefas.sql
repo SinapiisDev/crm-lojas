@@ -1,8 +1,6 @@
 -- Tarefas por pessoa, cobrança, pedido de novo prazo e avisos dentro do app.
 -- Avisos ficam em `notificacoes`; push/e-mail entram depois por cima desta tabela.
 
--- Funções novas não ficam executáveis por qualquer um; cada uma recebe grant explícito.
-alter default privileges in schema public revoke execute on functions from public;
 
 create type status_tarefa as enum ('a_fazer', 'fazendo', 'feito');
 create type recorrencia_tarefa as enum ('diaria', 'semanal', 'mensal');

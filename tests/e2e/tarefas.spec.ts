@@ -137,3 +137,14 @@ test("tarefa de outra loja responde 404", async ({ page }) => {
   expect(resposta?.status()).toBe(404);
   await expect(page.getByText(t.titulo)).toHaveCount(0);
 });
+
+test("tarefa de quem saiu da loja aparece em 'Saíram da loja'", async ({ page }) => {
+  const { loja1 } = await lojas();
+  const g = await criarUsuario(`Ger ${sufixo()}`, [[loja1, "gerente"]]);
+  const saiu = await criarUsuario(`Saiu ${sufixo()}`, [[loja1, "vendedor"]]);
+  const t = await tarefaNoBanco(loja1, saiu.id);
+  await admin.from("membros").delete().eq("usuario_id", saiu.id).eq("loja_id", loja1);
+  await entrar(page, g.email);
+  await page.goto("/tarefas");
+  await expect(coluna(page, "Saíram da loja").getByText(t.titulo)).toBeVisible();
+});
