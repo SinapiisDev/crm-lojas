@@ -225,3 +225,25 @@ describe("data de fechamento", () => {
     expect(data!.fechado_em).not.toBeNull();
   });
 });
+
+describe("datas do lead não são escolhidas pela vendedora (revisão Plano 3)", () => {
+  test("vendedora não cria lead com criado_em/fechado_em no passado", async () => {
+    const { data } = await vendA.cliente
+      .from("leads")
+      .insert({
+        loja_id: loja1, vendedor_id: vendA.id, nome: `forjado-${sufixo}`, etapa: "vendido", valor_vendido: 999999,
+        criado_em: "2020-01-02T00:00:00Z", fechado_em: "2020-01-02T00:00:00Z",
+      })
+      .select("criado_em, fechado_em")
+      .single();
+    expect(new Date(data!.criado_em).getFullYear()).toBeGreaterThan(2025);
+    expect(new Date(data!.fechado_em).getFullYear()).toBeGreaterThan(2025);
+  });
+
+  test("vendedora não reescreve criado_em no update", async () => {
+    const { data: antes } = await admin.from("leads").select("criado_em").eq("nome", `lead-a-${sufixo}`).single();
+    await vendA.cliente.from("leads").update({ criado_em: "2020-01-02T00:00:00Z" }).eq("nome", `lead-a-${sufixo}`);
+    const { data: depois } = await admin.from("leads").select("criado_em").eq("nome", `lead-a-${sufixo}`).single();
+    expect(depois!.criado_em).toBe(antes!.criado_em);
+  });
+});

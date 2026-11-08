@@ -1,4 +1,4 @@
-// Agregações do painel. shortcut: soma em TypeScript sobre linhas cruas; mover para SQL se passar de alguns milhares de leads.
+// Agregações do painel. shortcut: soma em TypeScript sobre linhas cruas (até 1000 por consulta, ver painel/page.tsx); mover para SQL quando o painel avisar.
 import { leadParado, type Etapa } from "./leads";
 import { hojeSP, type StatusTarefa } from "./tarefas";
 

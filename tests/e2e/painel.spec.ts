@@ -96,3 +96,14 @@ test("dona cai no painel ao entrar", async ({ page }) => {
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
   await expect(page).toHaveURL(/\/painel/);
 });
+
+test("no painel só existe o filtro de loja do próprio painel", async ({ page }) => {
+  const a = await lojaNova("Sel A");
+  const b = await lojaNova("Sel B");
+  const dona = await criarUsuario(`Dona ${sufixo()}`, [[a.id, "dono"], [b.id, "dono"]]);
+  await entrar(page, dona.email, undefined, "/painel");
+  await expect(page.getByRole("link", { name: "Todas as lojas" })).toBeVisible();
+  await expect(page.getByLabel("Loja", { exact: true })).toHaveCount(0);
+  await page.goto("/leads");
+  await expect(page.getByLabel("Loja", { exact: true })).toBeVisible();
+});

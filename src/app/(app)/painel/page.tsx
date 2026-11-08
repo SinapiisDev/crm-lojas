@@ -16,6 +16,8 @@ import { diasEntre, hojeSP, mensagemCobranca } from "@/lib/regras/tarefas";
 import { obterSessao, podeGerir } from "@/lib/sessao";
 import { cn } from "@/lib/utils";
 
+// shortcut: o PostgREST devolve no máximo 1000 linhas (max_rows); acima disso o painel avisa. Mover a soma para SQL quando aparecer o aviso.
+const LIMITE = 1000;
 const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 const nomeDe = (p: unknown) => (p as { nome: string } | null)?.nome ?? "—";
 
@@ -48,12 +50,14 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
       .from("leads")
       .select("loja_id, etapa, valor_vendido, criado_em, fechado_em, ultimo_contato_em, perfis!leads_vendedor_id_fkey(nome)")
       .in("loja_id", ids)
-      .or(`criado_em.gte.${p.inicioAnterior},fechado_em.gte.${p.inicio},etapa.in.(orcamento_enviado,negociacao)`),
+      .or(`criado_em.gte.${p.inicioAnterior},fechado_em.gte.${p.inicio},etapa.in.(orcamento_enviado,negociacao)`)
+      .limit(LIMITE),
     supabase
       .from("tarefas")
       .select("id, loja_id, titulo, prazo, status, concluida_em, perfis!tarefas_responsavel_id_fkey(nome)")
       .in("loja_id", ids)
-      .or(`prazo.gte.${p.inicio},status.neq.feito`),
+      .or(`prazo.gte.${p.inicio},status.neq.feito`)
+      .limit(LIMITE),
   ]);
 
   const listaLeads: LeadPainel[] = (leads ?? []).map(({ perfis, ...l }) => ({ ...l, vendedor: nomeDe(perfis) }) as LeadPainel);
@@ -65,6 +69,7 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
   const porPessoa = tarefasPorPessoa(listaTarefas, p, hoje);
   const vendas = vendasPorVendedora(listaLeads, p);
   const variasLojas = selecionadas.length > 1;
+  const incompleto = (leads?.length ?? 0) >= LIMITE || (tarefas?.length ?? 0) >= LIMITE;
   const nomeLoja = (id: string) => geridas.find((l) => l.id === id)?.nome;
 
   const link = (mudanca: Record<string, string>) => {
@@ -103,6 +108,12 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
           </Link>
         </div>
       </div>
+
+      {incompleto && (
+        <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          Muitos registros no período: os números abaixo podem estar incompletos. Avise o suporte.
+        </p>
+      )}
 
       <Bloco titulo="Leads e vendas por loja">
         <div className="overflow-x-auto">
