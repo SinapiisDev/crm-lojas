@@ -93,7 +93,7 @@ test("fluxo completo: gerente cobra, vendedora pede novo prazo, gerente aprova",
   await vendedora.goto(`/tarefas/${t.id}`);
   await expect(vendedora.getByText("Bruno, preciso disso hoje.")).toBeVisible();
   await vendedora.getByRole("button", { name: "Pedir novo prazo" }).click();
-  await vendedora.getByLabel("Novo prazo").fill(somarDias(2));
+  await vendedora.getByLabel("Novo prazo", { exact: true }).fill(somarDias(2));
   await vendedora.getByLabel("Motivo").fill("Cliente pediu para esperar a medida da obra");
   await vendedora.getByRole("button", { name: "Enviar pedido" }).click();
   await expect(vendedora.getByText(`Prazo pedido: ${ddmm(somarDias(2))}`)).toBeVisible();

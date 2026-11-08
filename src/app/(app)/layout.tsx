@@ -3,6 +3,7 @@ import { obterSessao } from "@/lib/sessao";
 import { sair } from "../login/actions";
 import { Menu } from "./menu";
 import { SeletorLoja } from "./seletor-loja";
+import { Sino } from "./sino";
 
 export default async function LayoutApp({ children }: LayoutProps<"/">) {
   const { usuario, lojas, lojaAtual } = await obterSessao();
@@ -14,6 +15,7 @@ export default async function LayoutApp({ children }: LayoutProps<"/">) {
           <SeletorLoja lojas={lojas} atual={lojaAtual.id} />
           <Menu />
           <div className="ml-auto flex items-center gap-2 text-sm">
+            <Sino usuarioId={usuario.id} />
             <span className="hidden text-muted-foreground sm:inline">{usuario.nome}</span>
             <form action={sair}>
               <Button type="submit" variant="ghost" size="sm">
