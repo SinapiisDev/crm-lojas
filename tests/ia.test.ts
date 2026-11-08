@@ -196,4 +196,28 @@ describe("núcleo da IA", () => {
     expect(r.leads).toBe(0);
     expect(pedidos).toHaveLength(3);
   });
+
+  test("rotina com pouco tempo para no meio e a próxima chamada continua sem repetir", async () => {
+    await admin.from("leads").insert(
+      Array.from({ length: 12 }, (_, i) => ({ loja_id: loja, vendedor_id: vend.id, nome: `tempo-${i}-${sufixo}`, etapa: "negociacao", ultimo_contato_em: tresDiasAtras() })),
+    );
+    const lento = (atraso: number) => {
+      const pedidos: PedidoIA<unknown>[] = [];
+      const modelo = (async (p: PedidoIA<unknown>) => {
+        pedidos.push(p);
+        await new Promise((ok) => setTimeout(ok, atraso));
+        return resposta;
+      }) as ModeloIA;
+      return { modelo, pedidos };
+    };
+    const cliente = (p: PedidoIA<unknown>) => /Cliente: (.*)/.exec(p.conteudo)?.[1];
+    const a = lento(40);
+    const r1 = await rotinaIA("2026-11-10", a.modelo, { prazo: Date.now() + 150 });
+    expect(r1.leads).toBeGreaterThan(0);
+    expect(r1.leads).toBeLessThan(10);
+    const b = lento(0);
+    await rotinaIA("2026-11-10", b.modelo, { prazo: Date.now() + 60_000 });
+    const primeiros = new Set(a.pedidos.map(cliente));
+    expect(b.pedidos.map(cliente).filter((c) => primeiros.has(c))).toEqual([]);
+  });
 });

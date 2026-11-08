@@ -153,4 +153,12 @@ describe("despacharAvisos", () => {
     }
     expect(await pendente(id)).toBe(true);
   });
+
+  test("prazo estourado devolve o aviso para a fila (publicação)", async () => {
+    const u = await pessoa("semTempo");
+    const id = await aviso(u.id, `SemTempo ${sufixo}`);
+    await despacharAvisos({ prazo: Date.now() - 1 });
+    expect(await pendente(id)).toBe(true);
+    expect(await emailsPara(u.email)).toEqual([]);
+  });
 });

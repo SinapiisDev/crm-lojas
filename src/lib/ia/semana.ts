@@ -14,6 +14,7 @@ import {
 import { diasEntre } from "@/lib/regras/tarefas";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { atualizarLeadIA } from "./leads";
+import { tempoMaximo } from "@/lib/avisos/despachar";
 import { iaLigada, modeloAnthropic, type ModeloIA } from "./modelo";
 
 export const FormatoSemana = z.object({ texto: z.string() });
@@ -60,7 +61,7 @@ export function promptSemana(loja: string, p: ReturnType<typeof periodo>, leads:
 }
 
 // Segunda cedo: um resumo por loja (semana que terminou ontem). Lojas sem movimento ficam sem resumo.
-export async function gerarResumosSemanais(hoje: string, modelo?: ModeloIA): Promise<number> {
+export async function gerarResumosSemanais(hoje: string, modelo?: ModeloIA, { prazo = Date.now() + tempoMaximo() } = {}): Promise<number> {
   if (!modelo) {
     if (!iaLigada()) return 0;
     modelo = modeloAnthropic();
@@ -75,6 +76,7 @@ export async function gerarResumosSemanais(hoje: string, modelo?: ModeloIA): Pro
   let gerados = 0;
 
   for (const loja of lojas ?? []) {
+    if (Date.now() > prazo) break; // o resto fica para a próxima chamada do cron
     if (jaFeitas.has(loja.id)) continue;
     const [{ data: leads }, { data: tarefas }] = await Promise.all([
       admin
@@ -125,8 +127,13 @@ export async function gerarResumosSemanais(hoje: string, modelo?: ModeloIA): Pro
   return gerados;
 }
 
-// Todo dia 07:45: reanalisa leads parados (os mais antigos primeiro) e, na segunda, gera os resumos.
-export async function rotinaIA(hoje: string, modelo?: ModeloIA): Promise<{ leads: number; resumos: number }> {
+// Das 07:00 às 07:55, a cada 5 min: reanalisa leads parados (os mais antigos primeiro) e, na segunda, gera os resumos.
+// Cada chamada faz o que couber no prazo; quem foi analisado sai da fila (ia_em), então ninguém repete.
+export async function rotinaIA(
+  hoje: string,
+  modelo?: ModeloIA,
+  { prazo = Date.now() + tempoMaximo() } = {},
+): Promise<{ leads: number; resumos: number }> {
   if (!modelo) {
     if (!iaLigada()) return { leads: 0, resumos: 0 };
     modelo = modeloAnthropic();
@@ -151,12 +158,13 @@ export async function rotinaIA(hoje: string, modelo?: ModeloIA): Promise<{ leads
 
   // Segunda: o resumo da dona vem primeiro, para não ficar sem tempo atrás das análises.
   const segunda = new Date(hoje + "T12:00:00Z").getUTCDay() === 1;
-  const resumos = segunda ? await gerarResumosSemanais(hoje, modelo) : 0;
+  const resumos = segunda ? await gerarResumosSemanais(hoje, modelo, { prazo }) : 0;
 
   // Chave vencida, sem crédito ou API fora: 3 falhas seguidas e para (nada de 50 chamadas inúteis).
   let leads = 0;
   let falhasSeguidas = 0;
   for (const l of fila) {
+    if (Date.now() > prazo) break;
     if (await atualizarLeadIA(l.id, modelo)) {
       leads++;
       falhasSeguidas = 0;
