@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { despacharAvisos } from "@/lib/avisos/despachar";
 import { RECORRENCIAS, STATUS_TAREFA, hojeSP, type StatusTarefa } from "@/lib/regras/tarefas";
 import { obterSessao, podeGerir } from "@/lib/sessao";
 
@@ -20,6 +22,8 @@ const traduzir = (msg?: string) => ERROS[msg ?? ""] ?? "Não foi possível salva
 function atualizar(id?: string) {
   revalidatePath("/tarefas");
   if (id) revalidatePath(`/tarefas/${id}`);
+  // Aviso criado pela ação sai já, sem esperar o próximo minuto do cron.
+  after(() => despacharAvisos().catch((e) => console.error("despacho após ação falhou", e)));
 }
 
 export async function criarTarefa(_: Resultado, form: FormData): Promise<Resultado> {
