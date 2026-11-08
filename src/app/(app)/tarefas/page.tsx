@@ -2,11 +2,15 @@ import Link from "next/link";
 import { AoVivo } from "@/components/comum/ao-vivo";
 import { CardTarefa, type TarefaResumo } from "@/components/tarefas/card-tarefa";
 import { NovaTarefa } from "@/components/tarefas/nova-tarefa";
+import { CardReuniao } from "@/components/reunioes/card-reuniao";
+import { NovaReuniao } from "@/components/reunioes/nova-reuniao";
 import { hojeSP } from "@/lib/regras/tarefas";
 import { obterSessao, podeGerir } from "@/lib/sessao";
 import { cn } from "@/lib/utils";
 
 const seteDiasAtras = () => new Date(Date.now() - 7 * 86_400_000).toISOString();
+// Reuniões no quadro: de 12 h atrás até 14 dias à frente.
+const janelaReunioes = () => [new Date(Date.now() - 12 * 3_600_000).toISOString(), new Date(Date.now() + 14 * 86_400_000).toISOString()];
 
 // Domingo da semana corrente (YYYY-MM-DD), para o filtro "Esta semana".
 function fimDaSemana(hoje: string) {
@@ -32,10 +36,21 @@ export default async function PaginaTarefas({ searchParams }: PageProps<"/tarefa
     : consulta.or(`status.neq.feito,concluida_em.gte.${seteDiasAtras()}`);
   if (soSemana) consulta = consulta.lte("prazo", fimDaSemana(hoje));
 
-  const [{ data: tarefas }, { data: membros }] = await Promise.all([
+  const [de, ate] = janelaReunioes();
+  const [{ data: tarefas }, { data: membros }, { data: reunioes }] = await Promise.all([
     consulta,
     supabase.from("membros").select("perfis(id, nome)").eq("loja_id", lojaAtual.id),
+    supabase
+      .from("reunioes")
+      .select("id, titulo, inicio, reuniao_participantes(usuario_id)")
+      .eq("loja_id", lojaAtual.id)
+      .eq("cancelada", false)
+      .gte("inicio", de)
+      .lte("inicio", ate)
+      .order("inicio"),
   ]);
+  const reunioesDe = (pessoa: string) =>
+    (reunioes ?? []).filter((r) => (r.reuniao_participantes as { usuario_id: string }[]).some((p) => p.usuario_id === pessoa));
 
   const pessoas = (membros ?? [])
     .map((m) => m.perfis as unknown as { id: string; nome: string })
@@ -58,7 +73,10 @@ export default async function PaginaTarefas({ searchParams }: PageProps<"/tarefa
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Tarefas · {lojaAtual.nome}</h1>
-        <NovaTarefa pessoas={podeGerir(lojaAtual.cargo) ? pessoas : null} hoje={hoje} />
+        <div className="flex gap-2">
+          {podeGerir(lojaAtual.cargo) && <NovaReuniao pessoas={pessoas} hoje={hoje} eu={usuario.id} />}
+          <NovaTarefa pessoas={podeGerir(lojaAtual.cargo) ? pessoas : null} hoje={hoje} />
+        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         <Link href={link({ semana: soSemana ? "" : "1" })} className={filtro(soSemana)}>
@@ -78,6 +96,8 @@ export default async function PaginaTarefas({ searchParams }: PageProps<"/tarefa
                 <span className="text-muted-foreground">{daPessoa.filter((t) => t.status !== "feito").length}</span>
               </h2>
               <div className="flex min-h-24 flex-col gap-2">
+                {p.id &&
+                  reunioesDe(p.id).map((r) => <CardReuniao key={r.id} id={r.id} titulo={r.titulo} inicio={r.inicio} />)}
                 {daPessoa.map((t) => (
                   <CardTarefa key={t.id} tarefa={t} hoje={hoje} />
                 ))}

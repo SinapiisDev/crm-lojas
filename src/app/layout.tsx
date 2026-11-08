@@ -8,6 +8,8 @@ const geistSans = Geist({ variable: "--font-sans", subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "CRM Lojas",
   description: "Leads, tarefas e reuniões das lojas",
+  icons: { icon: "/icones/192", apple: "/icones/180" },
+  appleWebApp: { capable: true, title: "CRM", statusBarStyle: "default" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
