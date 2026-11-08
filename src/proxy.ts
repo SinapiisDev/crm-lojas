@@ -1,8 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Sem sessão: login, retorno do e-mail/Google, despacho (tem segredo próprio) e arquivos do PWA.
-const PUBLICAS = ["/login", "/auth", "/api/avisos/despachar", "/manifest.webmanifest", "/sw.js", "/icones"];
+// Sem sessão: login, retorno do e-mail/Google, despacho e feed de agenda (segredo/token próprios) e arquivos do PWA.
+const PUBLICAS = ["/login", "/auth", "/api/avisos/despachar", "/manifest.webmanifest", "/sw.js", "/icones", "/agenda"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

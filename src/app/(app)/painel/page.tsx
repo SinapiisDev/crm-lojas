@@ -13,11 +13,21 @@ import {
   type TarefaPainel,
 } from "@/lib/regras/painel";
 import { diasEntre, hojeSP, mensagemCobranca } from "@/lib/regras/tarefas";
+import { horaSP, situacaoReuniao } from "@/lib/regras/reunioes";
 import { obterSessao, podeGerir } from "@/lib/sessao";
 import { cn } from "@/lib/utils";
 
 // shortcut: o PostgREST devolve no máximo 1000 linhas (max_rows); acima disso o painel avisa. Mover a soma para SQL quando aparecer o aviso.
 const LIMITE = 1000;
+const ROTULO_REUNIAO: Record<string, string> = {
+  proxima: "próxima",
+  agora: "agora",
+  aguardando: "aguardando registro",
+  sem_registro: "sem registro",
+  aconteceu: "aconteceu · ata ok",
+  nao_aconteceu: "não aconteceu",
+};
+const seteDiasDepois = (dia: string) => new Date(Date.parse(dia + "T03:00:00Z") + 8 * 86_400_000).toISOString();
 const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 const nomeDe = (p: unknown) => (p as { nome: string } | null)?.nome ?? "—";
 
@@ -45,7 +55,7 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
   const hoje = hojeSP();
   const p = periodo(filtros.dias === "30" ? 30 : 7, hoje);
 
-  const [{ data: leads }, { data: tarefas }] = await Promise.all([
+  const [{ data: leads }, { data: tarefas }, { data: reunioes }] = await Promise.all([
     supabase
       .from("leads")
       .select("loja_id, etapa, valor_vendido, criado_em, fechado_em, ultimo_contato_em, perfis!leads_vendedor_id_fkey(nome)")
@@ -58,6 +68,16 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
       .in("loja_id", ids)
       .or(`prazo.gte.${p.inicio},status.neq.feito`)
       .limit(LIMITE),
+    // Reuniões do período + próximos 7 dias.
+    supabase
+      .from("reunioes")
+      .select("id, loja_id, titulo, inicio, duracao_min, cancelada, aconteceu")
+      .in("loja_id", ids)
+      .eq("cancelada", false)
+      .gte("inicio", `${p.inicio}T03:00:00Z`)
+      .lte("inicio", seteDiasDepois(p.fim))
+      .order("inicio", { ascending: false })
+      .limit(50),
   ]);
 
   const listaLeads: LeadPainel[] = (leads ?? []).map(({ perfis, ...l }) => ({ ...l, vendedor: nomeDe(perfis) }) as LeadPainel);
@@ -205,6 +225,46 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
             </table>
           ) : (
             <Vazio texto="Nenhuma tarefa com prazo no período." />
+          )}
+        </Bloco>
+
+        <Bloco titulo="Reuniões">
+          {reunioes?.length ? (
+            <table className={tabela}>
+              <tbody>
+                {reunioes.map((r) => {
+                  const situacao = situacaoReuniao(r);
+                  return (
+                    <tr key={r.id}>
+                      <td>
+                        <Link href={`/reunioes/${r.id}`} className="underline-offset-2 hover:underline">
+                          {r.titulo}
+                        </Link>
+                        <span className="block text-xs text-muted-foreground">
+                          {horaSP(r.inicio)}
+                          {variasLojas && ` · ${nomeLoja(r.loja_id)}`}
+                        </span>
+                      </td>
+                      <td className="text-right">
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-xs",
+                            situacao === "sem_registro" && "bg-destructive/10 text-destructive",
+                            situacao === "aconteceu" && "bg-green-100 text-green-800",
+                            (situacao === "proxima" || situacao === "agora") && "bg-amber-100 text-amber-900",
+                            (situacao === "aguardando" || situacao === "nao_aconteceu") && "bg-muted",
+                          )}
+                        >
+                          {ROTULO_REUNIAO[situacao]}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <Vazio texto="Nenhuma reunião no período." />
           )}
         </Bloco>
 
