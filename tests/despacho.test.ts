@@ -66,6 +66,9 @@ async function esperarEmail(email: string, assunto: string) {
 }
 
 beforeAll(async () => {
+  // Fila limpa: outros arquivos de teste deixam avisos pendentes e o despacho pega os 10 mais antigos.
+  // (Na máquina local o cron do banco esvazia a fila a cada minuto; no CI não há servidor rodando.)
+  await admin.from("notificacoes").update({ enviado_em: new Date().toISOString() }).is("enviado_em", null);
   const { data } = await admin
     .from("lojas")
     .insert({ empresa_id: "00000000-0000-0000-0000-000000000001", nome: `Despacho ${sufixo}` })
