@@ -1,15 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { atualizarLeadIA } from "@/lib/ia/leads";
 import { ETAPAS, ORIGENS, validarMudancaEtapa, type Etapa } from "@/lib/regras/leads";
 import { formatarMoeda } from "@/lib/formatar";
 import { obterSessao, podeGerir } from "@/lib/sessao";
 
 export type Resultado = { erro?: string; ok?: boolean };
 
-function atualizar(id?: string) {
+function atualizar(id?: string, analisar = false) {
   revalidatePath("/leads");
   if (id) revalidatePath(`/leads/${id}`);
+  // Com a IA ligada, reanalisa o lead depois de responder ao usuário (desligada: não faz nada).
+  // Melhor esforço: se a função for encerrada antes, a rotina diária cobre os parados.
+  if (id && analisar) after(() => atualizarLeadIA(id).then(() => {}).catch((e) => console.error("IA após ação falhou", e)));
 }
 
 export async function criarLead(_: Resultado, form: FormData): Promise<Resultado> {
@@ -38,7 +43,7 @@ export async function criarLead(_: Resultado, form: FormData): Promise<Resultado
     .single();
   if (error) return { erro: "Não foi possível salvar o lead." };
   await supabase.from("lead_eventos").insert({ lead_id: data.id, tipo: "criado", autor_id: usuario.id });
-  atualizar();
+  atualizar(data.id, true);
   return { ok: true };
 }
 
@@ -63,7 +68,8 @@ export async function moverLead(
   const detalhe =
     etapa === "vendido" ? ` (${formatarMoeda(extras.valorVendido)})` : etapa === "perdido" ? ` (${extras.motivoPerda!.trim()})` : "";
   await supabase.from("lead_eventos").insert({ lead_id: id, tipo: "etapa", texto: titulo + detalhe, autor_id: usuario.id });
-  atualizar(id);
+  // Vendido/perdido: não há conversa a retomar, não gasta chamada.
+  atualizar(id, etapa !== "vendido" && etapa !== "perdido");
   return { ok: true };
 }
 
@@ -76,7 +82,7 @@ async function registrar(id: string, tipo: "contato" | "whatsapp", texto: string
     .select("id");
   if (error || !data?.length) return { erro: "Não foi possível registrar." };
   await supabase.from("lead_eventos").insert({ lead_id: id, tipo, texto, autor_id: usuario.id });
-  atualizar(id);
+  atualizar(id, tipo === "contato");
   return { ok: true };
 }
 

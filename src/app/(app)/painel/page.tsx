@@ -28,6 +28,7 @@ const ROTULO_REUNIAO: Record<string, string> = {
   nao_aconteceu: "não aconteceu",
 };
 const seteDiasDepois = (dia: string) => new Date(Date.parse(dia + "T03:00:00Z") + 8 * 86_400_000).toISOString();
+const seisDiasAntes = (dia: string) => new Date(Date.parse(dia + "T12:00:00Z") - 6 * 86_400_000).toISOString().slice(0, 10);
 const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 const nomeDe = (p: unknown) => (p as { nome: string } | null)?.nome ?? "—";
 
@@ -55,7 +56,7 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
   const hoje = hojeSP();
   const p = periodo(filtros.dias === "30" ? 30 : 7, hoje);
 
-  const [{ data: leads }, { data: tarefas }, { data: reunioes }] = await Promise.all([
+  const [{ data: leads }, { data: tarefas }, { data: reunioes }, { data: resumos }] = await Promise.all([
     supabase
       .from("leads")
       .select("loja_id, etapa, valor_vendido, criado_em, fechado_em, ultimo_contato_em, perfis!leads_vendedor_id_fkey(nome)")
@@ -78,6 +79,13 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
       .lte("inicio", seteDiasDepois(p.fim))
       .order("inicio", { ascending: false })
       .limit(50),
+    // Resumo da IA desta semana (gerado na segunda).
+    supabase
+      .from("resumos_semanais")
+      .select("loja_id, texto, semana_inicio")
+      .in("loja_id", ids)
+      .gte("semana_inicio", seisDiasAntes(hoje))
+      .order("semana_inicio", { ascending: false }),
   ]);
 
   const listaLeads: LeadPainel[] = (leads ?? []).map(({ perfis, ...l }) => ({ ...l, vendedor: nomeDe(perfis) }) as LeadPainel);
@@ -133,6 +141,23 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
         <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
           Muitos registros no período: os números abaixo podem estar incompletos. Avise o suporte.
         </p>
+      )}
+
+      {!!resumos?.length && (
+        <Bloco titulo="Resumo da semana">
+          <div className="flex flex-col gap-2 text-sm">
+            {selecionadas
+              .map((l) => ({ loja: l, resumo: resumos.find((r) => r.loja_id === l.id) }))
+              .filter((x) => x.resumo)
+              .map(({ loja, resumo }) => (
+                <p key={loja.id} className="whitespace-pre-line">
+                  {variasLojas && <span className="font-medium">{loja.nome}: </span>}
+                  {resumo!.texto}
+                </p>
+              ))}
+            <span className="text-xs text-muted-foreground">Escrito pela IA a partir dos números da semana.</span>
+          </div>
+        </Bloco>
       )}
 
       <Bloco titulo="Leads e vendas por loja">

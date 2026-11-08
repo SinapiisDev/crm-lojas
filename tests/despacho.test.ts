@@ -66,6 +66,9 @@ async function esperarEmail(email: string, assunto: string) {
 }
 
 beforeAll(async () => {
+  // Fila limpa: outros arquivos de teste deixam avisos pendentes e o despacho pega os 10 mais antigos.
+  // (Na máquina local o cron do banco esvazia a fila a cada minuto; no CI não há servidor rodando.)
+  await admin.from("notificacoes").update({ enviado_em: new Date().toISOString() }).is("enviado_em", null);
   const { data } = await admin
     .from("lojas")
     .insert({ empresa_id: "00000000-0000-0000-0000-000000000001", nome: `Despacho ${sufixo}` })
@@ -152,5 +155,37 @@ describe("despacharAvisos", () => {
       process.env.SMTP_PORT = salvo;
     }
     expect(await pendente(id)).toBe(true);
+  });
+
+  test("prazo estourado devolve o aviso para a fila (publicação)", async () => {
+    const u = await pessoa("semTempo");
+    const id = await aviso(u.id, `SemTempo ${sufixo}`);
+    await despacharAvisos({ prazo: Date.now() - 1 });
+    expect(await pendente(id)).toBe(true);
+    expect(await emailsPara(u.email)).toEqual([]);
+  });
+
+  test("TEMPO_MAX_MS vazio ou inválido usa o padrão de 25 s (C1/I5)", async () => {
+    const { tempoMaximo } = await import("@/lib/avisos/despachar");
+    const salvo = process.env.TEMPO_MAX_MS;
+    try {
+      delete process.env.TEMPO_MAX_MS;
+      expect(tempoMaximo()).toBe(25_000);
+      for (const ruim of ["", "8s", "0", "-5"]) {
+        process.env.TEMPO_MAX_MS = ruim;
+        expect(tempoMaximo()).toBe(25_000);
+      }
+      process.env.TEMPO_MAX_MS = "40000";
+      expect(tempoMaximo()).toBe(40_000);
+    } finally {
+      if (salvo === undefined) delete process.env.TEMPO_MAX_MS; else process.env.TEMPO_MAX_MS = salvo;
+    }
+  });
+
+  test("prazo curto (3 s) ainda envia: a margem não engole o prazo todo", async () => {
+    const u = await pessoa("prazoCurto");
+    const id = await aviso(u.id, `PrazoCurto ${sufixo}`);
+    await despacharAvisos({ prazo: Date.now() + 3_000 });
+    expect(await pendente(id)).toBe(false);
   });
 });

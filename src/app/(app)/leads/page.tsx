@@ -18,7 +18,7 @@ export default async function PaginaLeads() {
   const [{ data: leads }, { data: equipe }] = await Promise.all([
     supabase
       .from("leads")
-      .select("id, nome, origem, etapa, valor_estimado, valor_vendido, ultimo_contato_em, perfis!leads_vendedor_id_fkey(nome)")
+      .select("id, nome, origem, etapa, valor_estimado, valor_vendido, ultimo_contato_em, temperatura, perfis!leads_vendedor_id_fkey(nome)")
       .eq("loja_id", lojaAtual.id)
       .or(`fechado_em.is.null,fechado_em.gte.${trintaDias}`)
       .order("ultimo_contato_em", { ascending: true }),

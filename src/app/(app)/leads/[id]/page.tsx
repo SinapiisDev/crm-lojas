@@ -18,7 +18,7 @@ export default async function PaginaLead({ params }: PageProps<"/leads/[id]">) {
     ? await Promise.all([
         supabase
           .from("leads")
-          .select("id, nome, telefone, origem, etapa, valor_estimado, valor_vendido, motivo_perda, ultimo_contato_em, perfis!leads_vendedor_id_fkey(nome)")
+          .select("id, nome, telefone, origem, etapa, valor_estimado, valor_vendido, motivo_perda, ultimo_contato_em, resumo_ia, sugestao_ia, ia_em, perfis!leads_vendedor_id_fkey(nome)")
           .eq("id", id)
           .maybeSingle(),
         supabase.from("lead_eventos").select("id, tipo, texto, criado_em, perfis(nome)").eq("lead_id", id).order("criado_em", { ascending: false }),
@@ -57,6 +57,18 @@ export default async function PaginaLead({ params }: PageProps<"/leads/[id]">) {
             <MudarEtapa key={lead.etapa} id={lead.id} etapa={lead.etapa as Etapa} />
             {zap && <BotaoWhatsApp id={lead.id} link={zap} />}
           </div>
+          {/* Só mostra sugestão feita depois do último contato e com o lead em aberto (senão já foi usada). */}
+          {lead.sugestao_ia && lead.ia_em && lead.ia_em >= lead.ultimo_contato_em && !["vendido", "perdido"].includes(lead.etapa) && (
+            <section aria-label="Sugestão da IA" className="flex flex-col gap-2 rounded-lg bg-sky-50 p-3 text-sky-950">
+              <span className="text-xs font-semibold uppercase tracking-wide">Sugestão da IA</span>
+              {lead.resumo_ia && <p>{lead.resumo_ia}</p>}
+              <p className="rounded-md bg-white p-2 italic">{lead.sugestao_ia}</p>
+              {linkWhatsApp(lead.telefone, lead.sugestao_ia) && (
+                <BotaoWhatsApp id={lead.id} link={linkWhatsApp(lead.telefone, lead.sugestao_ia)!} rotulo="Enviar sugestão no WhatsApp" />
+              )}
+              <span className="text-xs opacity-70">Revise antes de enviar.</span>
+            </section>
+          )}
           <RegistrarContato id={lead.id} />
         </CardContent>
       </Card>

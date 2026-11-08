@@ -13,6 +13,13 @@ export type LeadResumo = {
   valor_vendido: number | null;
   ultimo_contato_em: string;
   vendedor: string | null;
+  temperatura: "quente" | "morno" | "frio" | null;
+};
+
+const TEMPERATURA = {
+  quente: { texto: "Quente", cor: "text-red-700" },
+  morno: { texto: "Morno", cor: "text-amber-700" },
+  frio: { texto: "Frio", cor: "text-sky-700" },
 };
 
 export function CardLead({ lead, diasLimite, mostrarVendedor }: { lead: LeadResumo; diasLimite: number; mostrarVendedor: boolean }) {
@@ -34,6 +41,7 @@ export function CardLead({ lead, diasLimite, mostrarVendedor }: { lead: LeadResu
       <div className="mt-1 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
         <span>{ORIGENS.find((o) => o.id === lead.origem)?.titulo}</span>
         {valor != null && <span>{formatarMoeda(valor)}</span>}
+        {lead.temperatura && lead.etapa !== "vendido" && lead.etapa !== "perdido" && <span className={cn("font-medium", TEMPERATURA[lead.temperatura].cor)}>{TEMPERATURA[lead.temperatura].texto}</span>}
       </div>
       <div className="mt-1 flex justify-between gap-2 text-xs">
         {lead.etapa !== "vendido" && lead.etapa !== "perdido" && (
