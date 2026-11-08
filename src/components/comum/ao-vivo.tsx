@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { criarClienteNavegador } from "@/lib/supabase/client";
 
-// Recarrega os dados da tela quando algum lead da loja muda (outra pessoa mexeu).
-export function AoVivo({ lojaId }: { lojaId: string }) {
+// Recarrega os dados da tela quando alguma linha da loja muda (outra pessoa mexeu).
+export function AoVivo({ tabela, lojaId }: { tabela: "leads" | "tarefas"; lojaId: string }) {
   const router = useRouter();
   useEffect(() => {
     const supabase = criarClienteNavegador();
@@ -18,8 +18,8 @@ export function AoVivo({ lojaId }: { lojaId: string }) {
       if (!ativo || !data.session) return;
       await supabase.realtime.setAuth(data.session.access_token);
       canal = supabase
-        .channel(`leads-${lojaId}`)
-        .on("postgres_changes", { event: "*", schema: "public", table: "leads", filter: `loja_id=eq.${lojaId}` }, () =>
+        .channel(`${tabela}-${lojaId}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: tabela, filter: `loja_id=eq.${lojaId}` }, () =>
           router.refresh(),
         )
         .subscribe();
@@ -29,6 +29,6 @@ export function AoVivo({ lojaId }: { lojaId: string }) {
       ativo = false;
       if (canal) supabase.removeChannel(canal);
     };
-  }, [lojaId, router]);
+  }, [tabela, lojaId, router]);
   return null;
 }

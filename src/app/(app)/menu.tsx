@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 const ITENS = [
   { href: "/leads", titulo: "Leads" },
+  { href: "/tarefas", titulo: "Tarefas" },
   { href: "/equipe", titulo: "Equipe" },
 ];
 
