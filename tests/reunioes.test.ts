@@ -84,7 +84,7 @@ describe("criar", () => {
 
 describe("registrar e remarcar", () => {
   test("registrar exige ata quando aconteceu; participante registra", async () => {
-    const { data: id } = await criar(gerente);
+    const { data: id } = await criar(gerente, { p_inicio: daquiA(-120) });
     expect((await vendA.cliente.rpc("registrar_reuniao", { p_reuniao: id, p_aconteceu: true, p_ata: "  " })).error).not.toBeNull();
     expect((await vendA.cliente.rpc("registrar_reuniao", { p_reuniao: id, p_aconteceu: true, p_ata: "Meta: 10 vendas" })).error).toBeNull();
     const { data } = await admin.from("reunioes").select("aconteceu, ata, registrada_por").eq("id", id).single();
@@ -92,7 +92,7 @@ describe("registrar e remarcar", () => {
   });
 
   test("vendedora que não participa não registra", async () => {
-    const { data: id } = await criar(gerente);
+    const { data: id } = await criar(gerente, { p_inicio: daquiA(-120) });
     expect((await vendB.cliente.rpc("registrar_reuniao", { p_reuniao: id, p_aconteceu: false, p_ata: null })).error).not.toBeNull();
   });
 
@@ -134,5 +134,34 @@ describe("lembrete e agenda", () => {
     expect((await anon.rpc("criar_reuniao", { p_loja: loja, p_titulo: "x", p_pauta: null, p_inicio: daquiA(60), p_duracao: 60, p_local: null, p_participantes: [] })).error).not.toBeNull();
     expect((await anon.rpc("lembrar_reunioes")).error).not.toBeNull();
     expect((await vendA.cliente.rpc("lembrar_reunioes")).error).not.toBeNull();
+  });
+});
+
+describe("correções da revisão", () => {
+  test("não registra reunião que ainda não começou", async () => {
+    const { data: id } = await criar(gerente);
+    expect((await vendA.cliente.rpc("registrar_reuniao", { p_reuniao: id, p_aconteceu: true, p_ata: "adiantada" })).error).not.toBeNull();
+  });
+
+  test("participante não sobrescreve ata já registrada; gestor corrige", async () => {
+    const { data: id } = await criar(gerente, { p_inicio: daquiA(-120) });
+    await gerente.cliente.rpc("registrar_reuniao", { p_reuniao: id, p_aconteceu: true, p_ata: "Ata original" });
+    expect((await vendA.cliente.rpc("registrar_reuniao", { p_reuniao: id, p_aconteceu: true, p_ata: "Reescrita" })).error).not.toBeNull();
+    expect((await gerente.cliente.rpc("registrar_reuniao", { p_reuniao: id, p_aconteceu: true, p_ata: "Ata corrigida" })).error).toBeNull();
+    const { data } = await admin.from("reunioes").select("ata").eq("id", id).single();
+    expect(data!.ata).toBe("Ata corrigida");
+  });
+
+  test("quem saiu da loja não recebe mais convite da reunião", async () => {
+    const { enviarConvitesReuniao } = await import("@/lib/avisos/convites-reuniao");
+    const titulo = `Saiu ${sufixo}`;
+    const { data: id } = await criar(gerente, { p_titulo: titulo, p_participantes: [vendA.id, vendB.id] });
+    await admin.from("membros").delete().eq("usuario_id", vendB.id).eq("loja_id", loja);
+    await enviarConvitesReuniao(id as string, "REQUEST");
+    const assuntos = async (email: string) =>
+      ((await (await fetch(`http://127.0.0.1:54324/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`)).json()).messages ?? [])
+        .map((m: { Subject: string }) => m.Subject);
+    expect(await assuntos(`vena-${sufixo}@teste.local`)).toContain(`Convite: ${titulo}`);
+    expect(await assuntos(`venb-${sufixo}@teste.local`)).not.toContain(`Convite: ${titulo}`);
   });
 });

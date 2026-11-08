@@ -11,12 +11,16 @@ export async function enviarConvitesReuniao(reuniaoId: string, metodo: "REQUEST"
   const admin = criarClienteAdmin();
   const { data: r, error } = await admin
     .from("reunioes")
-    .select("id, titulo, pauta, inicio, duracao_min, local, sequencia, reuniao_participantes(perfis(email))")
+    .select("id, loja_id, titulo, pauta, inicio, duracao_min, local, sequencia, reuniao_participantes(usuario_id, perfis(email))")
     .eq("id", reuniaoId)
     .single();
   if (error || !r) return console.error("convite de reunião: não achei", reuniaoId, error);
 
-  const emails = (r.reuniao_participantes as unknown as { perfis: { email: string } | null }[])
+  // Só quem ainda é da loja: quem saiu não recebe mais nada da reunião.
+  const { data: membros } = await admin.from("membros").select("usuario_id").eq("loja_id", r.loja_id);
+  const ativos = new Set((membros ?? []).map((m) => m.usuario_id));
+  const emails = (r.reuniao_participantes as unknown as { usuario_id: string; perfis: { email: string } | null }[])
+    .filter((p) => ativos.has(p.usuario_id))
     .map((p) => p.perfis?.email)
     .filter((e): e is string => !!e);
   const quando = horaSP(r.inicio);

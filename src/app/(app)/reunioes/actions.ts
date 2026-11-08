@@ -17,6 +17,8 @@ const ERROS: Record<string, string> = {
   reuniao_cancelada: "A reunião foi cancelada.",
   escolha_se_aconteceu: "Diga se a reunião aconteceu.",
   ata_obrigatoria: "Escreva o que foi decidido.",
+  reuniao_nao_comecou: "A reunião ainda não começou.",
+  ja_registrada: "A reunião já foi registrada. Só a gerência corrige.",
 };
 const traduzir = (msg?: string) => ERROS[msg ?? ""] ?? "Não foi possível salvar.";
 const DATA = /^\d{4}-\d{2}-\d{2}$/;
