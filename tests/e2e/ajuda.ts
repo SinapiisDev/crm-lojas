@@ -39,10 +39,22 @@ export async function linkDoEmail(email: string) {
   throw new Error(`e-mail para ${email} não chegou`);
 }
 
-export async function entrar(page: Page, email: string, senha = SENHA) {
+// Entra e vai para `destino` (dona/gerente caem no painel depois do login).
+export async function entrar(page: Page, email: string, senha = SENHA, destino = "/leads") {
   await page.goto("/login");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha", { exact: true }).fill(senha);
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
-  await expect(page).toHaveURL(/\/leads/);
+  await expect(page).toHaveURL(/\/(leads|painel)/);
+  if (!page.url().endsWith(destino)) await page.goto(destino);
+}
+
+export async function lojaNova(nome: string) {
+  const { data, error } = await admin
+    .from("lojas")
+    .insert({ empresa_id: "00000000-0000-0000-0000-000000000001", nome: `${nome} ${sufixo()}` })
+    .select("id, nome")
+    .single();
+  if (error) throw error;
+  return data as { id: string; nome: string };
 }

@@ -213,3 +213,15 @@ describe("correções da revisão", () => {
     expect(data!.motivo_perda).toBeNull();
   });
 });
+
+describe("data de fechamento", () => {
+  test("lead que já nasce vendido recebe fechado_em", async () => {
+    const { data, error } = await admin
+      .from("leads")
+      .insert({ loja_id: loja1, vendedor_id: vendA.id, nome: `nasce-vendido-${sufixo}`, etapa: "vendido", valor_vendido: 10 })
+      .select("fechado_em")
+      .single();
+    expect(error).toBeNull();
+    expect(data!.fechado_em).not.toBeNull();
+  });
+});

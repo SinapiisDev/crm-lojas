@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await criarClienteServidor();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}/leads`);
+    if (!error) return NextResponse.redirect(`${origin}/`);
   }
   // Conta inexistente: cadastro desligado (signup_disabled) ou trigger de convite recusou.
   const codigo = searchParams.get("error_code") ?? "";
