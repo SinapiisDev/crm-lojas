@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AtivarNotificacoes } from "@/components/comum/ativar-notificacoes";
 import { formatarDataHora } from "@/lib/formatar";
 import { obterSessao } from "@/lib/sessao";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ export default async function PaginaAvisos() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-3">
       <h1 className="text-xl font-semibold">Avisos</h1>
+      <AtivarNotificacoes />
       {!avisos?.length && <p className="text-muted-foreground">Nenhum aviso por enquanto.</p>}
       <ul className="flex flex-col gap-2">
         {(avisos ?? []).map((a) => (

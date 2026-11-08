@@ -115,9 +115,15 @@ describe("caixa de saída", () => {
 });
 
 describe("inscrições de push", () => {
+  test("cliente não grava inscrição direto (só pela ação do servidor)", async () => {
+    const r = await vend.cliente.from("push_inscricoes").insert({ usuario_id: vend.id, endpoint: `https://interno.local/${sufixo}`, p256dh: "x", auth: "y" });
+    expect(r.error).not.toBeNull();
+  });
+
   test("ninguém vê nem apaga inscrição de push alheia", async () => {
     const endpoint = `https://push.exemplo/${sufixo}`;
-    expect((await vend.cliente.from("push_inscricoes").insert({ usuario_id: vend.id, endpoint, p256dh: "x", auth: "y" })).error).toBeNull();
+    expect((await admin.from("push_inscricoes").insert({ usuario_id: vend.id, endpoint, p256dh: "x", auth: "y" })).error).toBeNull();
+    expect((await vend.cliente.from("push_inscricoes").select("id").eq("endpoint", endpoint)).data).toHaveLength(1);
     expect((await outra.cliente.from("push_inscricoes").select("id").eq("endpoint", endpoint)).data).toEqual([]);
     const apagou = await outra.cliente.from("push_inscricoes").delete().eq("endpoint", endpoint).select("id");
     expect(apagou.data ?? []).toEqual([]);

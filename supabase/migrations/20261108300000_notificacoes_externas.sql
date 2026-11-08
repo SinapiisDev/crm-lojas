@@ -18,11 +18,11 @@ create index push_inscricoes_usuario on push_inscricoes (usuario_id);
 
 alter table push_inscricoes enable row level security;
 create policy push_ver on push_inscricoes for select to authenticated using (usuario_id = auth.uid());
-create policy push_criar on push_inscricoes for insert to authenticated with check (usuario_id = auth.uid());
 create policy push_apagar on push_inscricoes for delete to authenticated using (usuario_id = auth.uid());
 revoke all on push_inscricoes from anon;
-revoke update on push_inscricoes from authenticated;
-grant select, insert, delete on push_inscricoes to authenticated;
+-- Gravar só pela ação do servidor, que valida o endpoint (só serviços de push conhecidos; evita SSRF).
+revoke insert, update on push_inscricoes from authenticated;
+grant select, delete on push_inscricoes to authenticated;
 
 -- ---------- Caixa de saída ----------
 
