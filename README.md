@@ -44,8 +44,7 @@ Ordem importa: banco primeiro, site depois, segredos por último.
    Em Site configuration → Environment variables, criar todas as de `.env.example` com valores de produção
    (Supabase: Project Settings → API; `NEXT_PUBLIC_SITE_URL` = `https://<nome>.netlify.app`; `AVISOS_SEGREDO` = texto longo aleatório).
    O primeiro build roda logo ao importar, antes das variáveis existirem: depois de criá-las, faça **Deploys → Trigger deploy**
-   (as `NEXT_PUBLIC_*` entram no build). Depois, no Supabase → Authentication → URL Configuration: Site URL = endereço da Netlify;
-   Redirect URLs = `<site>/auth/callback`.
+   (as `NEXT_PUBLIC_*` entram no build). Depois, no Supabase → Authentication → URL Configuration: Site URL = endereço da Netlify.
 3. **E-mail**: conta grátis no Resend, verificar um domínio (ou usar o de teste para começar), criar API key → `SMTP_*` e `EMAIL_REMETENTE`.
 4. **Rotinas** (SQL Editor do Supabase), com o mesmo segredo do passo 2:
    ```sql
@@ -62,7 +61,18 @@ Ordem importa: banco primeiro, site depois, segredos por último.
    se isso acontecer, reative em Actions.
 7. **IA** (opcional): `ANTHROPIC_API_KEY` (console.anthropic.com, créditos pré-pagos) e `AI_MODEL` na Netlify.
    Sem os dois, a IA fica desligada e o resto funciona igual.
-8. **Login Google** (opcional): credencial OAuth no Google Cloud e ativar o provedor Google no Supabase.
+8. **WhatsApp** (opcional, um número por loja; API oficial da Meta no modo coexistência — o celular continua usando o
+   WhatsApp Business normalmente e cada mensagem também chega ao CRM). Conferir os passos atuais na documentação da Meta:
+   - o número da loja precisa estar no app **WhatsApp Business** (não no WhatsApp pessoal), atualizado;
+   - em developers.facebook.com, criar um app do tipo Business ligado ao Meta Business da loja e adicionar o produto WhatsApp;
+   - conectar o número escolhendo a opção de usar o **app WhatsApp Business já existente** (coexistência; confirma com QR code no celular);
+   - Webhook do app: URL `https://<site>/api/whatsapp`, token de verificação = um texto que você inventa (vai em
+     `WHATSAPP_VERIFY_TOKEN` na Netlify) e assinar os campos `messages` e `smb_message_echoes`. O **App Secret**
+     (Configurações do app → Básico) vai em `WHATSAPP_APP_SECRET`;
+   - no SQL Editor, ligar o número à loja (o Phone number ID aparece no painel do WhatsApp do app):
+     `insert into whatsapp_numeros (phone_number_id, loja_id, numero) select '<Phone number ID>', id, '+55 41 3000-0000' from lojas where nome = 'Loja 1';`
+   As mensagens entram no lead com o mesmo telefone (com ou sem o 9, com ou sem +55). O CRM só lê e não envia nada pela API; a Meta cobra por
+   mensagem enviada pela API, não por mensagem recebida (conferir a tabela de preços atual da Meta). O celular precisa abrir o WhatsApp Business pelo menos a cada 14 dias, senão a Meta desliga a ligação.
 
 Limites dos planos grátis (conferir antes de publicar): Netlify trabalha com créditos mensais (cada deploy gasta créditos;
 acabou, o site pausa até o mês seguinte) e funções síncronas param em 60 s — por isso as rotinas trabalham em lotes

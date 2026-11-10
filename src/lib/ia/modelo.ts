@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { z } from "zod";
 
-export type PedidoIA<T> = { sistema: string; conteudo: string; formato: z.ZodType<T> };
+export type PedidoIA<T> = { sistema: string; conteudo: string; formato: z.ZodType<T>; maxTokens?: number };
 // Nunca lança: falha, recusa ou saída inválida viram null (a ação do usuário segue sem IA).
 export type ModeloIA = <T>(pedido: PedidoIA<T>) => Promise<T | null>;
 
@@ -15,11 +15,11 @@ export const iaLigada = () => MODELOS.includes(process.env.AI_MODEL ?? "") && !!
 export function modeloAnthropic(): ModeloIA {
   // Padrão do SDK é 10 min e 2 novas tentativas: uma chamada travada comeria a rotina inteira.
   const cliente = new Anthropic({ timeout: 20_000, maxRetries: 1 });
-  return async <T,>({ sistema, conteudo, formato }: PedidoIA<T>): Promise<T | null> => {
+  return async <T,>({ sistema, conteudo, formato, maxTokens = 2000 }: PedidoIA<T>): Promise<T | null> => {
     try {
       const r = await cliente.messages.parse({
         model: process.env.AI_MODEL!,
-        max_tokens: 2000,
+        max_tokens: maxTokens,
         system: sistema,
         messages: [{ role: "user", content: conteudo }],
         output_config: { effort: "low", format: zodOutputFormat(formato) },

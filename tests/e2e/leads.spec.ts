@@ -44,6 +44,7 @@ test("mudar para Vendido pede valor; cancelar não muda nada", async ({ page }) 
   await page.getByLabel("Valor vendido").fill("15000");
   await page.getByRole("button", { name: "Confirmar" }).click();
   await expect(page.getByLabel("Etapa")).toHaveValue("vendido");
+  await page.getByRole("region", { name: "Histórico" }).locator("summary").click(); // histórico começa fechado
   await expect(page.getByText(/Vendido.*R\$\s?15\.000,00/)).toBeVisible();
 });
 
@@ -93,7 +94,7 @@ test("registrar contato entra no histórico e zera o contador", async ({ page })
   await expect(page.getByText("Escreva o que foi conversado.")).toBeVisible();
   await page.getByLabel("O que foi conversado?").fill("Achou caro, vai ver com a esposa");
   await page.getByRole("button", { name: "Registrar contato" }).click();
-  await expect(page.getByText("Achou caro, vai ver com a esposa")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Conversa até agora" }).getByText("Achou caro, vai ver com a esposa")).toBeVisible();
   await page.goto("/leads");
   await expect(coluna(page, "Negociação").getByText("contato hoje")).toBeVisible();
 });
@@ -109,6 +110,7 @@ test("botão WhatsApp aponta para wa.me com DDI e registra contato", async ({ pa
   const popup = context.waitForEvent("page");
   await zap.click();
   await (await popup).close();
+  await page.getByRole("region", { name: "Histórico" }).locator("summary").click(); // histórico começa fechado
   await expect(page.getByText("Abriu o WhatsApp")).toBeVisible();
 });
 
@@ -157,4 +159,19 @@ test("conferente não vê leads", async ({ page }) => {
   const c = await criarUsuario("Conf", [[loja1, "conferente"]]);
   await entrar(page, c.email);
   await expect(page.getByText("Seu cargo não acompanha leads.")).toBeVisible();
+});
+
+test("vendedora marca a temperatura; o card mostra e a escolha fica salva", async ({ page }) => {
+  const { loja1 } = await lojas();
+  const v = await criarUsuario("Temperatura", [[loja1, "vendedor"]]);
+  const lead = await leadNoBanco(loja1, v.id, { etapa: "em_contato" });
+  await entrar(page, v.email, undefined, `/leads/${lead.id}`);
+  const temperatura = page.getByRole("group", { name: "Temperatura" });
+  await temperatura.getByRole("button", { name: "Quente" }).click();
+  await expect(temperatura.getByRole("button", { name: "Quente" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("Marcada por você")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("group", { name: "Temperatura" }).getByRole("button", { name: "Quente" })).toHaveAttribute("aria-pressed", "true");
+  await page.goto("/leads");
+  await expect(coluna(page, "Em contato").getByRole("link", { name: new RegExp(lead.nome) }).getByText("Quente")).toBeVisible();
 });

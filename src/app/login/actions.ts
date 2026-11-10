@@ -3,8 +3,6 @@
 import { redirect } from "next/navigation";
 import { criarClienteServidor } from "@/lib/supabase/server";
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
 export type Estado = { erro?: string; aviso?: string };
 
 export async function entrar(_: Estado, form: FormData): Promise<Estado> {
@@ -15,16 +13,6 @@ export async function entrar(_: Estado, form: FormData): Promise<Estado> {
   });
   if (error) return { erro: "E-mail ou senha incorretos." };
   redirect("/");
-}
-
-export async function entrarComGoogle() {
-  const supabase = await criarClienteServidor();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${SITE}/auth/callback` },
-  });
-  if (error || !data.url) redirect("/login?erro=google");
-  redirect(data.url);
 }
 
 export async function esqueciSenha(_: Estado, form: FormData): Promise<Estado> {

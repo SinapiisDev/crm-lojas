@@ -68,6 +68,7 @@ test("participante registra ata e o painel mostra que aconteceu", async ({ page,
   const dona = await (await browser.newContext()).newPage();
   await entrar(dona, g.email, undefined, "/painel");
   const bloco = dona.getByRole("region", { name: "Reuniões" });
+  await bloco.locator("summary").click(); // começa fechado
   await expect(bloco.getByRole("row", { name: new RegExp(r.titulo) })).toContainText("aconteceu");
 });
 
@@ -76,6 +77,7 @@ test("reunião passada sem registro aparece como 'sem registro' no painel", asyn
   const g = await criarUsuario(`Ger ${sufixo()}`, [[loja.id, "gerente"]]);
   const r = await reuniaoNoBanco(loja.id, g.id, [g.id], new Date(Date.now() - 3 * 86_400_000).toISOString());
   await entrar(page, g.email, undefined, "/painel");
+  await page.getByRole("region", { name: "Reuniões" }).locator("summary").click(); // começa fechado
   await expect(page.getByRole("region", { name: "Reuniões" }).getByRole("row", { name: new RegExp(r.titulo) })).toContainText(
     "sem registro",
   );
@@ -103,4 +105,31 @@ test("vendedora não vê 'Nova reunião'", async ({ page }) => {
   await entrar(page, v.email, undefined, "/tarefas");
   await expect(page.getByRole("button", { name: "Nova tarefa" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Nova reunião" })).toHaveCount(0);
+});
+
+test("vendedora marca reunião pelo lead: aparece no lead, no quadro e manda convite", async ({ page }) => {
+  const loja = await lojaNova("Lead reunião");
+  const v = await criarUsuario(`Vend ${sufixo()}`, [[loja.id, "vendedor"]]);
+  const { data: lead } = await admin
+    .from("leads")
+    .insert({ loja_id: loja.id, vendedor_id: v.id, nome: `Cliente ${sufixo()}`, etapa: "negociacao" })
+    .select("id, nome")
+    .single();
+
+  await entrar(page, v.email, undefined, `/leads/${lead!.id}`);
+  await page.getByRole("button", { name: "Marcar reunião" }).click();
+  await expect(page.getByLabel("Título")).toHaveValue(`Reunião com ${lead!.nome}`);
+  await page.getByLabel("Data").fill(amanha());
+  await page.getByLabel("Hora").fill("15:00");
+  await page.getByLabel("Local ou link").fill("Showroom");
+  await page.getByRole("dialog").getByRole("button", { name: "Marcar reunião" }).click();
+
+  const reunioes = page.getByRole("region", { name: "Reuniões" });
+  await expect(reunioes.getByRole("link", { name: new RegExp(`Reunião com ${lead!.nome}`) })).toBeVisible();
+  await page.getByRole("region", { name: "Histórico" }).locator("summary").click();
+  await expect(page.getByText(/Reunião marcada: /)).toBeVisible();
+  expect(await emailBruto(v.email, `Convite: Reunião com ${lead!.nome}`)).toContain("METHOD:REQUEST");
+
+  await page.goto("/leads");
+  await expect(coluna(page, "Negociação").getByRole("link", { name: new RegExp(lead!.nome) })).toContainText("15:00");
 });

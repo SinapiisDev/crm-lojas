@@ -47,6 +47,8 @@ jobs:
             echo "SMTP_PORT=54325"
             echo 'EMAIL_REMETENTE="CRM Lojas <avisos@crm-lojas.app>"'
             echo "AVISOS_SEGREDO=segredo-local-avisos"
+            echo "WHATSAPP_VERIFY_TOKEN=token-local-whatsapp"
+            echo "WHATSAPP_APP_SECRET=segredo-local-whatsapp"
           } > .env.local
 
       - name: Testes de regras e banco
