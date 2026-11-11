@@ -75,3 +75,18 @@ test("dona troca de loja no seletor", async ({ page }) => {
   await page.getByRole("combobox", { name: "Loja" }).selectOption({ label: "Loja 2" });
   await expect(page.getByRole("heading", { name: "Equipe · Loja 2" })).toBeVisible();
 });
+
+test("cadastro de empresa nova: cria a conta e já entra como dona", async ({ page }) => {
+  const s = sufixo();
+  await page.goto("/login");
+  await page.getByRole("link", { name: "Criar conta" }).click();
+  await page.getByLabel("Seu nome").fill("Dona Nova");
+  await page.getByLabel("Nome da empresa").fill(`Empresa ${s}`);
+  await page.getByLabel("Nome da loja").fill(`Loja ${s}`);
+  await page.getByLabel("E-mail").fill(`nova-${s}@teste.local`);
+  await page.getByLabel("Senha", { exact: true }).fill(SENHA);
+  await page.getByLabel("Confirmar senha").fill(SENHA);
+  await page.getByRole("button", { name: "Criar conta" }).click();
+  await expect(page).not.toHaveURL(/\/(login|cadastro)/);
+  await expect(page.getByText(`Loja ${s}`).first()).toBeVisible();
+});
