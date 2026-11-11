@@ -1,8 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Sem sessão: login, retorno do e-mail, webhook do WhatsApp (assinatura própria), despacho e feed de agenda (segredo/token próprios) e arquivos do PWA.
-const PUBLICAS = ["/login", "/auth", "/api/avisos/despachar", "/api/ia/diaria", "/api/saude", "/api/whatsapp", "/manifest.webmanifest", "/sw.js", "/icones", "/agenda"];
+// Sem sessão: login, cadastro de empresa, retorno do e-mail, webhook do WhatsApp (assinatura própria), despacho e feed de agenda (segredo/token próprios) e arquivos do PWA.
+const PUBLICAS = ["/login", "/cadastro", "/auth", "/api/avisos/despachar", "/api/ia/diaria", "/api/saude", "/api/whatsapp", "/manifest.webmanifest", "/sw.js", "/icones", "/agenda"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
