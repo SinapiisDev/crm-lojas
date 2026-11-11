@@ -9,7 +9,7 @@ Pré-requisitos: Node 22+, Docker em execução.
 
 ```bash
 npm install
-cp .env.example .env.local        # preencha com os valores do passo abaixo
+touch .env.local                  # preencha com as variáveis listadas abaixo
 npm run db:start                  # sobe o Supabase local e mostra as chaves
 npm run db:reset                  # cria tabelas e as 2 lojas
 npm run criar-dono -- voce@email.com "Seu Nome"
@@ -41,7 +41,9 @@ Ordem importa: banco primeiro, site depois, segredos por último.
    - Authentication → Emails → colar `supabase/templates/convite.html` (Invite user) e `recuperar-senha.html` (Reset password).
    - Authentication → SMTP Settings → SMTP do Resend (o mesmo do passo 3), senão os convites caem no limite de e-mails do Supabase.
 2. **Netlify** (app.netlify.com → Add new project → Import from GitHub → `SinapiisDev/crm-lojas`, branch `main`).
-   Em Site configuration → Environment variables, criar todas as de `.env.example` com valores de produção
+   Em Site configuration → Environment variables, criar com valores de produção: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`,
+   `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_ASSUNTO`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USUARIO`,
+   `SMTP_SENHA`, `EMAIL_REMETENTE`, `AVISOS_SEGREDO`, `ANTHROPIC_API_KEY`, `AI_MODEL`, `TEMPO_MAX_MS` e, se usar WhatsApp, `WHATSAPP_VERIFY_TOKEN` e `WHATSAPP_APP_SECRET`
    (Supabase: Project Settings → API; `NEXT_PUBLIC_SITE_URL` = `https://<nome>.netlify.app`; `AVISOS_SEGREDO` = texto longo aleatório).
    O primeiro build roda logo ao importar, antes das variáveis existirem: depois de criá-las, faça **Deploys → Trigger deploy**
    (as `NEXT_PUBLIC_*` entram no build). Depois, no Supabase → Authentication → URL Configuration: Site URL = endereço da Netlify.
