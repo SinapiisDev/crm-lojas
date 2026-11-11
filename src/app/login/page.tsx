@@ -3,7 +3,6 @@ import { FormularioLogin } from "./formulario";
 
 const ERROS: Record<string, string> = {
   convite: "Acesso só por convite. Fale com a gerente da sua loja.",
-  google: "Não foi possível entrar com Google. Tente de novo ou use e-mail e senha.",
   "sem-loja": "Sua conta não está ligada a nenhuma loja. Fale com a dona.",
   link: "O link expirou ou já foi usado. Peça um novo convite ou use “Esqueci a senha”.",
 };

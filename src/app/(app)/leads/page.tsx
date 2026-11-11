@@ -18,8 +18,10 @@ export default async function PaginaLeads() {
   const [{ data: leads }, { data: equipe }] = await Promise.all([
     supabase
       .from("leads")
-      .select("id, nome, origem, etapa, valor_estimado, valor_vendido, ultimo_contato_em, temperatura, perfis!leads_vendedor_id_fkey(nome)")
+      .select("id, nome, origem, etapa, valor_estimado, valor_vendido, ultimo_contato_em, temperatura, perfis!leads_vendedor_id_fkey(nome), reunioes(inicio)")
       .eq("loja_id", lojaAtual.id)
+      .gte("reunioes.inicio", new Date().toISOString())
+      .eq("reunioes.cancelada", false)
       .or(`fechado_em.is.null,fechado_em.gte.${trintaDias}`)
       .order("ultimo_contato_em", { ascending: true }),
     gere
@@ -27,9 +29,11 @@ export default async function PaginaLeads() {
       : Promise.resolve({ data: null }),
   ]);
 
-  const resumo: LeadResumo[] = (leads ?? []).map(({ perfis, ...l }) => ({
+  const resumo: LeadResumo[] = (leads ?? []).map(({ perfis, reunioes, ...l }) => ({
     ...l,
     vendedor: (perfis as unknown as { nome: string } | null)?.nome ?? null,
+    // Próxima reunião marcada com o cliente (só as futuras e não canceladas vêm do banco).
+    reuniao: (reunioes as { inicio: string }[]).map((r) => r.inicio).sort()[0] ?? null,
   })) as LeadResumo[];
   const vendedores =
     equipe?.map((m) => m.perfis as unknown as { id: string; nome: string }).sort((a, b) => (a.id === usuario.id ? -1 : b.id === usuario.id ? 1 : a.nome.localeCompare(b.nome))) ?? null;

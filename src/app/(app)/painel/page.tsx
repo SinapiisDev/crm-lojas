@@ -225,7 +225,7 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
         </p>
       </Bloco>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid items-start gap-4 md:grid-cols-2">
         <Bloco titulo="Tarefas atrasadas">
           {atrasadas.length ? (
             <table className={tabela}>
@@ -256,7 +256,7 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
           )}
         </Bloco>
 
-        <Bloco titulo="Tarefas do período por pessoa">
+        <Bloco titulo="Tarefas do período por pessoa" fechado>
           {porPessoa.length ? (
             <table className={tabela}>
               <thead>
@@ -283,7 +283,7 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
           )}
         </Bloco>
 
-        <Bloco titulo="Reuniões">
+        <Bloco titulo="Reuniões" fechado>
           {reunioes?.length ? (
             <table className={tabela}>
               <tbody>
@@ -323,7 +323,7 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
           )}
         </Bloco>
 
-        <Bloco titulo="Vendas por vendedora">
+        <Bloco titulo="Vendas por vendedora" fechado>
           {vendas.length ? (
             <table className={tabela}>
               <thead>

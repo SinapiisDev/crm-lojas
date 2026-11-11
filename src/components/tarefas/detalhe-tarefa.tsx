@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Cobrar, DecidirPrazo, PedirPrazo } from "@/components/tarefas/acoes-tarefa";
 import { MudarStatus } from "@/components/tarefas/mudar-status";
+import { Sanfona } from "@/components/comum/sanfona";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatarDataHora } from "@/lib/formatar";
 import { RECORRENCIAS, hojeSP, mensagemCobranca, textoPrazo, type StatusTarefa } from "@/lib/regras/tarefas";
@@ -90,25 +91,20 @@ export async function DetalheTarefa({ id, emModal = false }: { id: string; emMod
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ol className="flex flex-col gap-3 text-sm">
-            {(eventos ?? []).map((e) => (
-              <li key={e.id} className="border-l-2 pl-3">
-                <div className="text-xs text-muted-foreground">
-                  {formatarDataHora(e.criado_em)} · {(e.perfis as unknown as { nome: string } | null)?.nome ?? "Sistema"} ·{" "}
-                  {NOME_EVENTO[e.tipo]}
-                  {e.prazo && ` · ${ddmm(e.prazo)}`}
-                </div>
-                {e.texto && <p>{e.texto}</p>}
-              </li>
-            ))}
-          </ol>
-        </CardContent>
-      </Card>
+      <Sanfona titulo="Histórico" extra={eventos?.length || undefined}>
+        <ol className="flex flex-col gap-3 text-sm">
+          {(eventos ?? []).map((e) => (
+            <li key={e.id} className="border-l-2 pl-3">
+              <div className="text-xs text-muted-foreground">
+                {formatarDataHora(e.criado_em)} · {(e.perfis as unknown as { nome: string } | null)?.nome ?? "Sistema"} ·{" "}
+                {NOME_EVENTO[e.tipo]}
+                {e.prazo && ` · ${ddmm(e.prazo)}`}
+              </div>
+              {e.texto && <p>{e.texto}</p>}
+            </li>
+          ))}
+        </ol>
+      </Sanfona>
     </div>
   );
 }

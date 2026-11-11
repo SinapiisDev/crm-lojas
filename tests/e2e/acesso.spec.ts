@@ -29,6 +29,18 @@ test("senha errada mostra aviso", async ({ page }) => {
   await expect(page.getByText("E-mail ou senha incorretos.")).toBeVisible();
 });
 
+test("login: botão mostra e oculta a senha; sem Google", async ({ page }) => {
+  await page.goto("/login");
+  const senha = page.getByLabel("Senha", { exact: true });
+  await senha.fill("minha-senha");
+  await expect(senha).toHaveAttribute("type", "password");
+  await page.getByRole("button", { name: "Mostrar senha" }).click();
+  await expect(senha).toHaveAttribute("type", "text");
+  await page.getByRole("button", { name: "Ocultar senha" }).click();
+  await expect(senha).toHaveAttribute("type", "password");
+  await expect(page.getByRole("button", { name: /google/i })).toHaveCount(0);
+});
+
 test("dona convida pela tela de equipe; vendedora não vê o formulário", async ({ page }) => {
   const { loja1, loja2 } = await lojas();
   const dona = await criarUsuario("Dona", [[loja1, "dono"], [loja2, "dono"]]);

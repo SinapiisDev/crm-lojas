@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, ListChecks, SquareKanban, Users } from "lucide-react";
+import { LayoutDashboard, ListChecks, Sparkles, SquareKanban, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ const ITENS = [
   { href: "/leads", titulo: "Leads", icone: SquareKanban },
   { href: "/tarefas", titulo: "Tarefas", icone: ListChecks },
   { href: "/equipe", titulo: "Equipe", icone: Users },
+  { href: "/assistente", titulo: "Assistente", icone: Sparkles, soGestor: true },
 ];
 
 // Lateral (computador) ou barra inferior (celular); item ativo em preto, como na referência.

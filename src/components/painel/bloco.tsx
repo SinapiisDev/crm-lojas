@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
+import { Sanfona } from "@/components/comum/sanfona";
 
-// Caixa com título do painel; `region` com nome para leitor de tela e testes.
-export function Bloco({ titulo, children }: { titulo: string; children: ReactNode }) {
+// Bloco do painel: sanfona aberta por padrão; `fechado` para os menos consultados.
+export function Bloco({ titulo, fechado = false, children }: { titulo: string; fechado?: boolean; children: ReactNode }) {
   return (
-    <section aria-label={titulo} className="rounded-3xl bg-card p-5 shadow-card">
-      <h2 className="mb-4 text-base font-semibold tracking-tight">{titulo}</h2>
+    <Sanfona titulo={titulo} aberta={!fechado}>
       {children}
-    </section>
+    </Sanfona>
   );
 }
 

@@ -37,7 +37,9 @@ test("dona vê números do período por loja e total", async ({ page }) => {
   await expect(linhaA.getByRole("cell").nth(5)).toHaveText("1");
   await expect(page.getByRole("row", { name: new RegExp(b.nome) }).getByRole("cell").nth(1)).toHaveText(/^0/);
   await expect(page.getByRole("row", { name: /Total/ }).getByRole("cell").nth(1)).toHaveText(/^3/);
-  await expect(page.getByRole("region", { name: "Vendas por vendedora" }).getByText(carla.nome)).toBeVisible();
+  const vendas = page.getByRole("region", { name: "Vendas por vendedora" });
+  await vendas.locator("summary").click(); // começa fechado
+  await expect(vendas.getByText(carla.nome)).toBeVisible();
 
   await page.getByRole("link", { name: "Últimos 30 dias" }).click();
   await expect(linhaA.getByRole("cell").nth(1)).toHaveText(/^4/);
@@ -106,4 +108,15 @@ test("no painel só existe o filtro de loja do próprio painel", async ({ page }
   await expect(page.getByRole("combobox", { name: "Loja", exact: true })).toHaveCount(0);
   await page.goto("/leads");
   await expect(page.getByRole("combobox", { name: "Loja", exact: true })).toBeVisible();
+});
+
+test("painel: blocos em sanfona, os menos usados começam fechados", async ({ page }) => {
+  const loja = await lojaNova("Sanfona");
+  const dona = await criarUsuario(`Dona ${sufixo()}`, [[loja.id, "dono"]]);
+  await entrar(page, dona.email, undefined, "/painel");
+  const vendas = page.getByRole("region", { name: "Vendas por vendedora" });
+  await expect(vendas.locator("details")).not.toHaveAttribute("open");
+  await expect(page.getByRole("region", { name: "Tarefas atrasadas" }).locator("details")).toHaveAttribute("open", "");
+  await vendas.locator("summary").click();
+  await expect(vendas.locator("details")).toHaveAttribute("open", "");
 });

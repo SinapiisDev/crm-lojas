@@ -1,7 +1,7 @@
-import { Clock } from "lucide-react";
+import { CalendarClock, Clock } from "lucide-react";
 import Link from "next/link";
 import { Etiqueta, estiloCard, type CorEtiqueta } from "@/components/comum/quadro";
-import { formatarMoeda, textoSemContato } from "@/lib/formatar";
+import { formatarDataHora, formatarMoeda, textoSemContato } from "@/lib/formatar";
 import { ORIGENS, diasSemContato, leadParado, type Etapa, type Origem } from "@/lib/regras/leads";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,7 @@ export type LeadResumo = {
   ultimo_contato_em: string;
   vendedor: string | null;
   temperatura: "quente" | "morno" | "frio" | null;
+  reuniao?: string | null;
 };
 
 const TEMPERATURA: Record<string, { texto: string; cor: CorEtiqueta }> = {
@@ -41,6 +42,11 @@ export function CardLead({ lead, diasLimite, mostrarVendedor }: { lead: LeadResu
         {lead.temperatura && aberto && <Etiqueta cor={TEMPERATURA[lead.temperatura].cor}>{TEMPERATURA[lead.temperatura].texto}</Etiqueta>}
         <Etiqueta cor={COR_ORIGEM[lead.origem]}>{ORIGENS.find((o) => o.id === lead.origem)?.titulo}</Etiqueta>
         {lead.etapa === "vendido" && <Etiqueta cor="verde">Vendido</Etiqueta>}
+        {lead.reuniao && aberto && (
+          <Etiqueta cor="azul">
+            <CalendarClock className="size-3" aria-hidden /> {formatarDataHora(lead.reuniao)}
+          </Etiqueta>
+        )}
       </div>
       <p className="leading-snug font-medium">{lead.nome}</p>
       {valor != null && <p className="mt-0.5 text-xs font-semibold">{formatarMoeda(valor)}</p>}

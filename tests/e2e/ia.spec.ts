@@ -31,8 +31,8 @@ test("lead analisado mostra temperatura, resumo e WhatsApp com a sugestão", asy
   await expect(card.getByText("Quente")).toBeVisible();
 
   await page.goto(`/leads/${data!.id}`);
+  await expect(page.getByRole("region", { name: "Conversa até agora" }).getByText("Quer parcelar; pediu retorno até sexta.")).toBeVisible();
   const caixa = page.getByRole("region", { name: "Sugestão da IA" });
-  await expect(caixa.getByText("Quer parcelar; pediu retorno até sexta.")).toBeVisible();
   await expect(caixa.getByText(sugestao)).toBeVisible();
   await expect(caixa.getByRole("link", { name: "Enviar sugestão no WhatsApp" })).toHaveAttribute(
     "href",
@@ -92,4 +92,21 @@ test("lead vendido não mostra sugestão nem temperatura", async ({ page }) => {
   await expect(card.getByText("Quente")).toHaveCount(0);
   await page.goto(`/leads/${data!.id}`);
   await expect(page.getByRole("region", { name: "Sugestão da IA" })).toHaveCount(0);
+});
+
+test("assistente: só gerência vê; com IA desligada avisa", async ({ page, browser }) => {
+  const loja = await lojaNova("Assist");
+  const g = await criarUsuario(`Ger ${sufixo()}`, [[loja.id, "gerente"]]);
+  const v = await criarUsuario(`Vend ${sufixo()}`, [[loja.id, "vendedor"]]);
+
+  await entrar(page, g.email);
+  await page.getByRole("link", { name: "Assistente" }).first().click();
+  await expect(page.getByRole("heading", { name: "Assistente" })).toBeVisible();
+  await expect(page.getByText("A IA está desligada.")).toBeVisible();
+
+  const vendedora = await (await browser.newContext()).newPage();
+  await entrar(vendedora, v.email);
+  await expect(vendedora.getByRole("link", { name: "Assistente" })).toHaveCount(0);
+  const r = await vendedora.goto("/assistente");
+  expect(r?.status()).toBe(404);
 });

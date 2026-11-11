@@ -53,6 +53,29 @@ export async function criarReuniao(_: Resultado, form: FormData): Promise<Result
   return { ok: true };
 }
 
+// Reunião com o cliente, a partir do lead: a vendedora dona do lead também pode marcar.
+export async function marcarReuniaoLead(_: Resultado, form: FormData): Promise<Resultado> {
+  const { supabase } = await obterSessao();
+  const lead = String(form.get("lead_id") ?? "");
+  const data = String(form.get("data") ?? "");
+  const hora = String(form.get("hora") ?? "");
+  if (!DATA.test(data) || !HORA.test(hora)) return { erro: "Informe data e hora." };
+  const { data: id, error } = await supabase.rpc("marcar_reuniao_lead", {
+    p_lead: lead,
+    p_titulo: String(form.get("titulo") ?? ""),
+    p_pauta: String(form.get("pauta") ?? ""),
+    p_inicio: paraUtc(data, hora),
+    p_duracao: Number(form.get("duracao") ?? 60),
+    p_local: String(form.get("local") ?? ""),
+    p_participantes: form.getAll("participantes").map(String),
+  });
+  if (error) return { erro: traduzir(error.message) };
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${lead}`);
+  depois(id as string, "REQUEST");
+  return { ok: true };
+}
+
 export async function registrarReuniao(id: string, aconteceu: boolean, ata: string): Promise<Resultado> {
   const { supabase } = await obterSessao();
   const { error } = await supabase.rpc("registrar_reuniao", { p_reuniao: id, p_aconteceu: aconteceu, p_ata: ata });

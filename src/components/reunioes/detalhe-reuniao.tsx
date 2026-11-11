@@ -24,7 +24,7 @@ export async function DetalheReuniao({ id, emModal = false }: { id: string; emMo
   const { supabase, usuario, lojas } = await obterSessao();
   const { data: r } = await supabase
     .from("reunioes")
-    .select("id, loja_id, titulo, pauta, inicio, duracao_min, local, cancelada, aconteceu, ata, reuniao_participantes(perfis(id, nome))")
+    .select("id, loja_id, lead_id, criado_por, titulo, pauta, inicio, duracao_min, local, cancelada, aconteceu, ata, leads(nome), reuniao_participantes(perfis(id, nome))")
     .eq("id", id)
     .maybeSingle();
   if (!r) notFound();
@@ -33,6 +33,9 @@ export async function DetalheReuniao({ id, emModal = false }: { id: string; emMo
     .map((p) => p.perfis)
     .filter((p): p is { id: string; nome: string } => !!p);
   const gere = podeGerir(lojas.find((l) => l.id === r.loja_id)?.cargo ?? "conferente");
+  // Mesma regra do banco (pode_mudar_reuniao): reunião de lead também pode ser mudada por quem marcou.
+  const podeMudar = gere || (!!r.lead_id && r.criado_por === usuario.id);
+  const cliente = (r.leads as unknown as { nome: string } | null)?.nome;
   const participa = pessoas.some((p) => p.id === usuario.id);
   const situacao = situacaoReuniao(r);
   const comecou = jaComecou(r.inicio);
@@ -40,9 +43,11 @@ export async function DetalheReuniao({ id, emModal = false }: { id: string; emMo
 
   return (
     <div className={emModal ? "flex flex-col gap-4" : "mx-auto flex max-w-2xl flex-col gap-4"}>
-      {!emModal && (<Link href="/tarefas" className="text-sm text-muted-foreground underline">
-        ← Tarefas
-      </Link>)}
+      {!emModal && (
+        <Link href={cliente ? `/leads/${r.lead_id}` : "/tarefas"} className="text-sm text-muted-foreground underline">
+          {cliente ? "← Lead" : "← Tarefas"}
+        </Link>
+      )}
       <Card>
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center justify-between gap-2">
@@ -62,6 +67,16 @@ export async function DetalheReuniao({ id, emModal = false }: { id: string; emMo
                 <dd>{r.local}</dd>
               </>
             )}
+            {r.lead_id && cliente && (
+              <>
+                <dt className="text-muted-foreground">Cliente</dt>
+                <dd>
+                  <Link href={`/leads/${r.lead_id}`} className="underline">
+                    {cliente}
+                  </Link>
+                </dd>
+              </>
+            )}
             <dt className="text-muted-foreground">Participantes</dt>
             <dd>{pessoas.map((p) => p.nome).join(", ")}</dd>
           </dl>
@@ -74,7 +89,7 @@ export async function DetalheReuniao({ id, emModal = false }: { id: string; emMo
             </div>
           )}
           {!r.cancelada && r.aconteceu === null && comecou && (gere || participa) && <RegistrarReuniao id={r.id} />}
-          {gere && !r.cancelada && !comecou && (
+          {podeMudar && !r.cancelada && !comecou && (
             <div className="flex flex-wrap gap-2">
               <Remarcar id={r.id} data={inicioSP.slice(0, 10)} hora={inicioSP.slice(11, 16)} duracao={r.duracao_min} />
               <Cancelar id={r.id} />

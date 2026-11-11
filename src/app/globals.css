@@ -150,3 +150,17 @@
     @apply font-sans;
   }
 }
+/* Sanfona: anima abrir/fechar onde o navegador suporta (Chrome 131+); nos outros só abre e fecha. */
+@media (prefers-reduced-motion: no-preference) {
+  .sanfona {
+    interpolate-size: allow-keywords;
+  }
+  .sanfona::details-content {
+    height: 0;
+    overflow: clip;
+    transition: height 200ms ease, content-visibility 200ms allow-discrete;
+  }
+  .sanfona[open]::details-content {
+    height: auto;
+  }
+}

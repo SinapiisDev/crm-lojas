@@ -4,7 +4,8 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { entrar, entrarComGoogle, esqueciSenha, type Estado } from "./actions";
+import { CampoSenha } from "@/components/comum/campo-senha";
+import { entrar, esqueciSenha, type Estado } from "./actions";
 
 export function FormularioLogin({ erroInicial }: { erroInicial?: string }) {
   const [modo, setModo] = useState<"entrar" | "esqueci">("entrar");
@@ -34,7 +35,7 @@ export function FormularioLogin({ erroInicial }: { erroInicial?: string }) {
                 Esqueci a senha
               </button>
             </div>
-            <Input id="senha" name="senha" type="password" autoComplete="current-password" required />
+            <CampoSenha id="senha" name="senha" autoComplete="current-password" required />
           </div>
         )}
 
@@ -46,13 +47,7 @@ export function FormularioLogin({ erroInicial }: { erroInicial?: string }) {
         </Button>
       </form>
 
-      {modo === "entrar" ? (
-        <form action={entrarComGoogle} className="mt-3">
-          <Button type="submit" variant="outline" className="w-full">
-            Entrar com Google
-          </Button>
-        </form>
-      ) : (
+      {modo === "esqueci" && (
         <button type="button" className="mt-4 w-full text-center text-sm underline" onClick={() => setModo("entrar")}>
           Voltar para o login
         </button>

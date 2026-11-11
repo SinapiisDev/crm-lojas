@@ -94,3 +94,13 @@ export async function registrarContato(id: string, texto: string): Promise<Resul
 export async function registrarWhatsApp(id: string): Promise<Resultado> {
   return registrar(id, "whatsapp", "Abriu o WhatsApp");
 }
+
+// Temperatura escolhida pela vendedora; null devolve a escolha para a IA.
+export async function definirTemperatura(id: string, temperatura: "quente" | "morno" | "frio" | null): Promise<Resultado> {
+  const { supabase } = await obterSessao();
+  const { error } = await supabase.rpc("definir_temperatura", { p_lead: id, p_temperatura: temperatura });
+  if (error) return { erro: error.message === "sem_permissao" ? "Você não tem permissão para isso." : "Não foi possível salvar." };
+  // Devolveu para a IA: reanalisa já, senão o lead fica sem temperatura até o próximo contato.
+  atualizar(id, temperatura === null);
+  return { ok: true };
+}

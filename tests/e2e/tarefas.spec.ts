@@ -86,11 +86,13 @@ test("fluxo completo: gerente cobra, vendedora pede novo prazo, gerente aprova",
   await expect(mensagem).toHaveValue(`Oi Bruno, a tarefa "${t.titulo}" venceu há 3 dias. Me dá um retorno até hoje?`);
   await mensagem.fill("Bruno, preciso disso hoje.");
   await page.getByRole("button", { name: "Enviar cobrança" }).click();
+  await page.getByRole("region", { name: "Histórico" }).locator("summary").click(); // histórico começa fechado
   await expect(page.getByText("Bruno, preciso disso hoje.")).toBeVisible();
 
   const vendedora = await (await browser.newContext()).newPage();
   await entrar(vendedora, v.email);
   await vendedora.goto(`/tarefas/${t.id}`);
+  await vendedora.getByRole("region", { name: "Histórico" }).locator("summary").click();
   await expect(vendedora.getByText("Bruno, preciso disso hoje.")).toBeVisible();
   await vendedora.getByRole("button", { name: "Pedir novo prazo" }).click();
   await vendedora.getByLabel("Novo prazo", { exact: true }).fill(somarDias(2));
@@ -99,6 +101,7 @@ test("fluxo completo: gerente cobra, vendedora pede novo prazo, gerente aprova",
   await expect(vendedora.getByText(`Prazo pedido: ${ddmm(somarDias(2))}`)).toBeVisible();
 
   await page.reload();
+  await page.getByRole("region", { name: "Histórico" }).locator("summary").click();
   await expect(page.getByText("Cliente pediu para esperar a medida da obra")).toBeVisible();
   await page.getByRole("button", { name: "Aprovar" }).click();
   await expect(page.getByText(`Prazo: ${ddmm(somarDias(2))}`)).toBeVisible();
