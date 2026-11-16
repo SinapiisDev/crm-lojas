@@ -88,7 +88,7 @@ export async function DetalheLead({ id, emModal = false }: { id: string; emModal
           </div>
           {/* Só mostra sugestão feita depois do último contato e com o lead em aberto (senão já foi usada). */}
           {lead.sugestao_ia && lead.ia_em && lead.ia_em >= lead.ultimo_contato_em && !["vendido", "perdido"].includes(lead.etapa) && (
-            <section aria-label="Sugestão da IA" className="flex flex-col gap-2 rounded-lg bg-primary/12 p-3 text-foreground ring-1 ring-primary/30">
+            <section aria-label="Sugestão da IA" className="flex flex-col gap-2 rounded-lg bg-ring/10 p-3 text-foreground ring-1 ring-ring/35">
               <span className="text-xs font-semibold uppercase tracking-wide">Sugestão da IA</span>
               <p className="rounded-md bg-card p-2 italic">{lead.sugestao_ia}</p>
               {linkWhatsApp(lead.telefone, lead.sugestao_ia) && (
@@ -112,7 +112,7 @@ export async function DetalheLead({ id, emModal = false }: { id: string; emModal
       <section aria-label="Conversa até agora" className="flex flex-col gap-3 rounded-3xl bg-card p-5 text-sm shadow-card">
         <h2 className="text-base font-semibold tracking-tight">Conversa até agora</h2>
         {lead.resumo_ia && (
-          <div className="rounded-2xl bg-primary/12 p-3 text-foreground ring-1 ring-primary/30">
+          <div className="rounded-2xl bg-ring/10 p-3 text-foreground ring-1 ring-ring/35">
             <span className="text-xs font-semibold uppercase tracking-wide">Resumo da IA</span>
             <p className="mt-1">{lead.resumo_ia}</p>
           </div>

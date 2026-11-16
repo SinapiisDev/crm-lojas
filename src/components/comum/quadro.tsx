@@ -24,8 +24,8 @@ const CORES = {
   ambar: "bg-atencao/15 text-atencao",
   verde: "bg-sucesso/15 text-sucesso",
   azul: "bg-info/15 text-info",
-  rosa: "bg-[oklch(0.7_0.2_345/0.16)] text-[oklch(0.8_0.15_345)]",
-  roxo: "bg-[oklch(0.65_0.2_295/0.18)] text-[oklch(0.8_0.13_295)]",
+  rosa: "bg-[oklch(0.7_0.2_345/0.16)] text-[oklch(0.5_0.18_345)]",
+  roxo: "bg-[oklch(0.65_0.2_295/0.18)] text-[oklch(0.48_0.18_295)]",
 };
 export type CorEtiqueta = keyof typeof CORES;
 
