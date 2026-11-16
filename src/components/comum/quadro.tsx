@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-// Peças do quadro estilo Trello: colunas cinza, cards brancos com sombra suave, etiquetas coloridas.
+// Peças do quadro estilo Trello: colunas um tom acima do fundo, cards de vidro escuro, etiquetas coloridas.
 
 export const estiloQuadro = "flex snap-x gap-4 overflow-x-auto pb-4 [scrollbar-width:thin]";
 export const estiloColuna = "flex w-[17.5rem] shrink-0 snap-start flex-col gap-2 self-start rounded-3xl bg-lista p-2.5 shadow-card";
@@ -21,11 +21,11 @@ const CORES = {
   cinza: "bg-muted text-foreground/75",
   preto: "bg-primary text-primary-foreground",
   vermelho: "bg-destructive/12 text-destructive",
-  ambar: "bg-atencao/20 text-[oklch(0.45_0.11_70)]",
-  verde: "bg-sucesso/15 text-[oklch(0.42_0.1_155)]",
-  azul: "bg-info/12 text-info",
-  rosa: "bg-[oklch(0.65_0.18_350/0.14)] text-[oklch(0.48_0.17_350)]",
-  roxo: "bg-[oklch(0.55_0.18_295/0.13)] text-[oklch(0.45_0.16_295)]",
+  ambar: "bg-atencao/15 text-atencao",
+  verde: "bg-sucesso/15 text-sucesso",
+  azul: "bg-info/15 text-info",
+  rosa: "bg-[oklch(0.7_0.2_345/0.16)] text-[oklch(0.8_0.15_345)]",
+  roxo: "bg-[oklch(0.65_0.2_295/0.18)] text-[oklch(0.8_0.13_295)]",
 };
 export type CorEtiqueta = keyof typeof CORES;
 

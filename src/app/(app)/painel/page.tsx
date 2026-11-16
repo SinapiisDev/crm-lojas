@@ -36,7 +36,7 @@ function Variacao({ atual, anterior }: { atual: number; anterior: number }) {
   const dif = atual - anterior;
   if (!dif) return null;
   return (
-    <span className={cn("ml-1 text-xs", dif > 0 ? "text-green-700" : "text-destructive")}>
+    <span className={cn("ml-1 text-xs", dif > 0 ? "text-sucesso" : "text-destructive")}>
       {dif > 0 ? "▲" : "▼"}
       {Math.abs(dif)}
     </span>
@@ -140,12 +140,12 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
       </div>
 
       {incompleto && (
-        <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+        <p role="alert" className="rounded-lg bg-atencao/12 p-3 text-sm text-atencao">
           Muitos registros no período: os números abaixo podem estar incompletos. Avise o suporte.
         </p>
       )}
 
-      <section aria-label="Visão geral" className="rounded-3xl bg-primary p-6 text-primary-foreground shadow-card-hover">
+      <section aria-label="Visão geral" className="rounded-3xl bg-destaque p-6 text-primary-foreground shadow-card-hover">
         <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
           <div>
             <p className="text-5xl font-semibold tracking-tight">{geral.novos}</p>
@@ -306,8 +306,8 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
                           className={cn(
                             "rounded-full px-2 py-0.5 text-xs",
                             situacao === "sem_registro" && "bg-destructive/10 text-destructive",
-                            situacao === "aconteceu" && "bg-green-100 text-green-800",
-                            (situacao === "proxima" || situacao === "agora") && "bg-amber-100 text-amber-900",
+                            situacao === "aconteceu" && "bg-sucesso/15 text-sucesso",
+                            (situacao === "proxima" || situacao === "agora") && "bg-atencao/15 text-atencao",
                             (situacao === "aguardando" || situacao === "nao_aconteceu") && "bg-muted",
                           )}
                         >

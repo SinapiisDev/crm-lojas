@@ -55,83 +55,57 @@
 }
 
 :root {
-  /* CRM Lojas — monocromático (ref. iDraft): fundo cinza claro, superfícies brancas, preto para destaque.
-     Cor só com significado: vermelho = atrasado/parado, âmbar = atenção, verde = feito/vendido, azul = reunião. */
-  --background: oklch(0.935 0.002 286);
-  --foreground: oklch(0.2 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0 0);
-  --primary: oklch(0.22 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.955 0.001 286);
-  --secondary-foreground: oklch(0.22 0 0);
-  --muted: oklch(0.955 0.001 286);
-  --muted-foreground: oklch(0.53 0.004 286);
-  --accent: oklch(0.955 0.001 286);
-  --accent-foreground: oklch(0.22 0 0);
-  --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.9 0.002 286);
-  --input: oklch(0.9 0.002 286);
-  --ring: oklch(0.55 0 0);
-  --chart-1: oklch(0.22 0 0);
-  --chart-2: oklch(0.45 0 0);
-  --chart-3: oklch(0.62 0 0);
-  --chart-4: oklch(0.75 0 0);
-  --chart-5: oklch(0.87 0 0);
+  /* CRM Lojas — tema escuro (ref. Airofit/Behance): preto azulado, cards de vidro escuro,
+     azul-elétrico como destaque e brilho violeta→magenta ao fundo.
+     Cor com significado continua: vermelho = atrasado/parado, âmbar = atenção, verde = feito/vendido, azul = reunião. */
+  color-scheme: dark;
+  --background: oklch(0.13 0.012 280);
+  --foreground: oklch(0.96 0.005 280);
+  --card: oklch(0.19 0.018 280);
+  --card-foreground: oklch(0.96 0.005 280);
+  --popover: oklch(0.2 0.02 280);
+  --popover-foreground: oklch(0.96 0.005 280);
+  --primary: oklch(0.52 0.27 268);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.25 0.022 280);
+  --secondary-foreground: oklch(0.96 0.005 280);
+  --muted: oklch(0.25 0.022 280);
+  --muted-foreground: oklch(0.72 0.02 280);
+  --accent: oklch(0.27 0.03 280);
+  --accent-foreground: oklch(0.96 0.005 280);
+  --destructive: oklch(0.68 0.2 22);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.65 0.22 275);
+  --chart-1: oklch(0.6 0.25 268);
+  --chart-2: oklch(0.6 0.22 300);
+  --chart-3: oklch(0.65 0.22 340);
+  --chart-4: oklch(0.72 0.14 250);
+  --chart-5: oklch(0.5 0.05 280);
   --radius: 0.875rem;
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.2 0 0);
-  --sidebar-primary: oklch(0.22 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.955 0.001 286);
-  --sidebar-accent-foreground: oklch(0.22 0 0);
-  --sidebar-border: oklch(0.9 0.002 286);
-  --sidebar-ring: oklch(0.55 0 0);
+  --sidebar: oklch(0.17 0.016 280);
+  --sidebar-foreground: oklch(0.96 0.005 280);
+  --sidebar-primary: oklch(0.52 0.27 268);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.25 0.022 280);
+  --sidebar-accent-foreground: oklch(0.96 0.005 280);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-ring: oklch(0.65 0.22 275);
 
-  /* Semânticas */
-  --sucesso: oklch(0.6 0.13 155);
-  --atencao: oklch(0.75 0.15 75);
-  --info: oklch(0.55 0.15 255);
-  /* Quadro estilo Trello */
-  --lista: oklch(0.965 0.001 286);
-  --sombra-card: 0 1px 2px oklch(0 0 0 / 6%), 0 1px 1px oklch(0 0 0 / 4%);
-  --sombra-card-hover: 0 6px 16px oklch(0 0 0 / 9%);
+  /* Semânticas (claras o bastante para ler no fundo escuro) */
+  --sucesso: oklch(0.76 0.15 155);
+  --atencao: oklch(0.82 0.14 80);
+  --info: oklch(0.74 0.13 250);
+  /* Quadro: colunas um tom acima do fundo; card com borda de luz e glow azul no hover */
+  --lista: oklch(0.16 0.015 280);
+  --sombra-card: inset 0 1px 0 oklch(1 0 0 / 6%), 0 0 0 1px oklch(1 0 0 / 6%), 0 6px 18px oklch(0 0 0 / 35%);
+  --sombra-card-hover: inset 0 1px 0 oklch(1 0 0 / 8%), 0 0 0 1px oklch(0.6 0.25 270 / 45%), 0 10px 30px oklch(0.5 0.27 268 / 28%);
+  --destaque: linear-gradient(135deg, oklch(0.48 0.27 268), oklch(0.42 0.22 295) 55%, oklch(0.55 0.23 340));
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* Destaques grandes (resumo do painel, marca do login): degradê da referência. */
+@utility bg-destaque {
+  background-image: var(--destaque);
 }
 
 @layer base {
@@ -140,10 +114,10 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Brilho suave ao fundo, como na referência (sem imagem). */
+    /* Brilho difuso ao fundo, como na referência: azul no alto, magenta embaixo (sem imagem). */
     background-image:
-      radial-gradient(60rem 40rem at 85% -10%, oklch(1 0 0 / 70%), transparent 60%),
-      radial-gradient(50rem 35rem at -10% 110%, oklch(1 0 0 / 55%), transparent 60%);
+      radial-gradient(60rem 40rem at 85% -10%, oklch(0.45 0.25 272 / 38%), transparent 60%),
+      radial-gradient(50rem 35rem at -10% 110%, oklch(0.5 0.24 330 / 18%), transparent 60%);
     background-attachment: fixed;
   }
   html {

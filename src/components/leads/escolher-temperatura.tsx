@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 
 type Temperatura = "quente" | "morno" | "frio";
 const OPCOES: { id: Temperatura; titulo: string; ativo: string }[] = [
-  { id: "quente", titulo: "Quente", ativo: "bg-red-100 text-red-800 ring-red-300" },
-  { id: "morno", titulo: "Morno", ativo: "bg-amber-100 text-amber-800 ring-amber-300" },
-  { id: "frio", titulo: "Frio", ativo: "bg-sky-100 text-sky-800 ring-sky-300" },
+  { id: "quente", titulo: "Quente", ativo: "bg-destructive/15 text-destructive ring-destructive/40" },
+  { id: "morno", titulo: "Morno", ativo: "bg-atencao/15 text-atencao ring-atencao/40" },
+  { id: "frio", titulo: "Frio", ativo: "bg-info/15 text-info ring-info/40" },
 ];
 
 // Clicar na já escolhida devolve a temperatura para a IA.

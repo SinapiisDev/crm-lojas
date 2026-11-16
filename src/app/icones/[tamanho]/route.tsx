@@ -15,7 +15,7 @@ export async function GET(_: Request, { params }: RouteContext<"/icones/[tamanho
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#171717",
+          backgroundImage: "linear-gradient(135deg, #3a3bff, #6d2bd9 55%, #d63a9c)",
           color: "#ffffff",
           fontSize: tamanho * 0.5,
           fontWeight: 700,
