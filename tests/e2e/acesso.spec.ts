@@ -66,6 +66,23 @@ test("dona convida pela tela de equipe; vendedora não vê o formulário", async
   await expect(page.getByRole("button", { name: "Convidar" })).toHaveCount(0);
 });
 
+test("dona cria acesso com senha inicial e a vendedora entra sem e-mail", async ({ page }) => {
+  const { loja1 } = await lojas();
+  const dona = await criarUsuario("DonaSenha", [[loja1, "dono"]]);
+  await entrar(page, dona.email);
+  await page.goto("/equipe");
+  const email = `comsenha-${sufixo()}@teste.local`;
+  await page.getByLabel("Nome").fill("Vendedora Com Senha");
+  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("Senha inicial (opcional)").fill(SENHA);
+  await page.getByRole("button", { name: "Convidar" }).click();
+  await expect(page.getByRole("status")).toContainText("Acesso criado");
+
+  await page.getByRole("button", { name: "Sair" }).click();
+  await entrar(page, email);
+  await expect(page).toHaveURL(/\/leads/);
+});
+
 test("dona troca de loja no seletor", async ({ page }) => {
   const { loja1, loja2 } = await lojas();
   const dona = await criarUsuario("Dona2", [[loja1, "dono"], [loja2, "dono"]]);

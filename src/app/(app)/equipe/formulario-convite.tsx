@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CampoSenha } from "@/components/comum/campo-senha";
 import { convidar, type EstadoConvite } from "./actions";
 
 const CARGOS = [
@@ -16,7 +17,7 @@ const CARGOS = [
 export function FormularioConvite({ podeConvidarDono }: { podeConvidarDono: boolean }) {
   const [estado, enviar, enviando] = useActionState<EstadoConvite, FormData>(convidar, {});
   return (
-    <form action={enviar} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end">
+    <form action={enviar} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_1fr_auto] sm:items-end">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="nome">Nome</Label>
         <Input id="nome" name="nome" required />
@@ -35,11 +36,15 @@ export function FormularioConvite({ podeConvidarDono }: { podeConvidarDono: bool
           ))}
         </select>
       </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="senha">Senha inicial (opcional)</Label>
+        <CampoSenha id="senha" name="senha" autoComplete="new-password" minLength={8} placeholder="Vazio = convite por e-mail" />
+      </div>
       <Button type="submit" disabled={enviando}>
         {enviando ? "Enviando..." : "Convidar"}
       </Button>
-      {estado.erro && <p role="alert" className="text-sm text-destructive sm:col-span-4">{estado.erro}</p>}
-      {estado.ok && <p role="status" className="text-sm text-green-700 sm:col-span-4">{estado.ok}</p>}
+      {estado.erro && <p role="alert" className="text-sm text-destructive sm:col-span-5">{estado.erro}</p>}
+      {estado.ok && <p role="status" className="text-sm text-green-700 sm:col-span-5">{estado.ok}</p>}
     </form>
   );
 }

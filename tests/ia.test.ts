@@ -168,7 +168,11 @@ describe("núcleo da IA", () => {
 
   test("na segunda o resumo da semana sai antes das análises de leads (C1)", async () => {
     const { modelo, pedidos } = modeloFalso({ texto: "Resumo de segunda.", ...resposta });
-    await rotinaIA("2026-11-16", modelo);
+    // Próxima segunda depois de hoje: os dados criados agora caem na semana resumida (data fixa vencia).
+    const d = new Date();
+    do d.setUTCDate(d.getUTCDate() + 1);
+    while (d.getUTCDay() !== 1);
+    await rotinaIA(d.toISOString().slice(0, 10), modelo);
     expect(pedidos[0].sistema).toContain("resumo semanal");
   });
 

@@ -17,6 +17,8 @@ export async function convidar(_: EstadoConvite, form: FormData): Promise<Estado
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { erro: "E-mail inválido." };
   if (!nome) return { erro: "Informe o nome." };
   if (!CARGOS.includes(cargo)) return { erro: "Escolha o cargo." };
+  const senha = String(form.get("senha") ?? "");
+  if (senha && senha.length < 8) return { erro: "A senha inicial precisa ter pelo menos 8 caracteres." };
 
   const { data: jaMembro } = await supabase
     .from("membros")
@@ -36,6 +38,13 @@ export async function convidar(_: EstadoConvite, form: FormData): Promise<Estado
 
   revalidatePath("/equipe");
   if (convite.aceito_em) return { ok: `${email} já tinha conta e foi adicionado(a) a ${lojaAtual.nome}.` };
+
+  // Com senha inicial: cria o acesso na hora, sem depender de e-mail (o gatilho do banco aceita o convite).
+  if (senha) {
+    const { error: erroConta } = await criarClienteAdmin().auth.admin.createUser({ email, password: senha, email_confirm: true, user_metadata: { nome } });
+    if (erroConta) return { erro: `Convite salvo, mas o acesso não foi criado: ${erroConta.message}` };
+    return { ok: `Acesso criado. Passe para ${nome} o e-mail ${email} e a senha inicial.` };
+  }
 
   const { error: erroEnvio } = await criarClienteAdmin().auth.admin.inviteUserByEmail(email, { data: { nome } });
   if (erroEnvio) return { erro: `Convite salvo, mas o e-mail não foi enviado: ${erroEnvio.message}` };
