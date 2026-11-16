@@ -77,3 +77,23 @@ export async function passarLeads(_: EstadoConvite, form: FormData): Promise<Est
   revalidatePath("/painel");
   return { ok: data.length === 1 ? "1 lead passado." : `${data.length} leads passados.` };
 }
+
+export async function removerMembro(usuarioId: string): Promise<EstadoConvite> {
+  const { supabase, lojaAtual } = await obterSessao();
+  if (!podeGerir(lojaAtual.cargo)) return { erro: "Só dona, sócios e gerente podem remover." };
+
+  // Lead não fica sem responsável: passe os leads antes (vendidos podem ficar).
+  const { count } = await supabase
+    .from("leads")
+    .select("id", { count: "exact", head: true })
+    .eq("loja_id", lojaAtual.id)
+    .eq("vendedor_id", usuarioId)
+    .neq("etapa", "vendido");
+  if (count) return { erro: `Essa pessoa ainda tem ${count} lead(s) em aberto. Use “Passar leads” antes de remover.` };
+
+  // O banco (RLS) decide quem pode tirar quem; nada removido = sem permissão.
+  const { data } = await supabase.from("membros").delete().eq("loja_id", lojaAtual.id).eq("usuario_id", usuarioId).select("usuario_id");
+  if (!data?.length) return { erro: "Você não tem permissão para remover essa pessoa." };
+  revalidatePath("/equipe");
+  return { ok: "Removida da loja." };
+}

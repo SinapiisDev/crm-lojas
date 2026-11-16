@@ -4,11 +4,12 @@ import { obterSessao, podeGerir } from "@/lib/sessao";
 import { cancelarConvite } from "./actions";
 import { FormularioConvite } from "./formulario-convite";
 import { PassarLeads } from "./passar-leads";
+import { RemoverMembro } from "./remover-membro";
 
 const NOME_CARGO = { dono: "Dono(a)/Sócio(a)", gerente: "Gerente", vendedor: "Vendedor(a)", conferente: "Conferente" };
 
 export default async function PaginaEquipe() {
-  const { supabase, lojaAtual } = await obterSessao();
+  const { supabase, usuario, lojaAtual } = await obterSessao();
   const gere = podeGerir(lojaAtual.cargo);
   const [{ data: membros }, { data: convites }] = await Promise.all([
     supabase.from("membros").select("cargo, perfis(id, nome, email)").eq("loja_id", lojaAtual.id),
@@ -61,7 +62,10 @@ export default async function PaginaEquipe() {
                   <span>
                     <span className="font-medium">{p.nome}</span> <span className="text-muted-foreground">{p.email}</span>
                   </span>
-                  <span>{NOME_CARGO[m.cargo as keyof typeof NOME_CARGO]}</span>
+                  <span className="flex items-start gap-2">
+                    <span className="py-1">{NOME_CARGO[m.cargo as keyof typeof NOME_CARGO]}</span>
+                    {gere && p.id !== usuario.id && <RemoverMembro id={p.id} nome={p.nome} />}
+                  </span>
                 </li>
               );
             })}
