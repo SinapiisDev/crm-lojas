@@ -91,6 +91,7 @@ export async function criarPropostas(
         nome: l.nome,
         telefone: l.telefone,
         origem: l.origem,
+        tipo: l.tipo,
         etapa: l.etapa,
         valor_estimado: l.valor_estimado,
       })

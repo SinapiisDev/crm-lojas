@@ -4,12 +4,13 @@ import { AoVivo } from "@/components/comum/ao-vivo";
 import { BotaoWhatsApp } from "@/components/leads/botao-whatsapp";
 import { EscolherTemperatura } from "@/components/leads/escolher-temperatura";
 import { MudarEtapa } from "@/components/leads/mudar-etapa";
+import { MudarTipo } from "@/components/leads/mudar-tipo";
 import { RegistrarContato } from "@/components/leads/registrar-contato";
 import { NovaReuniao } from "@/components/reunioes/nova-reuniao";
 import { Sanfona } from "@/components/comum/sanfona";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatarDataHora, formatarMoeda, textoSemContato } from "@/lib/formatar";
-import { ORIGENS, diasSemContato, linkWhatsApp, type Etapa, type Origem } from "@/lib/regras/leads";
+import { formatarDataHora, formatarMoeda, formatarTelefone, textoSemContato } from "@/lib/formatar";
+import { ORIGENS, diasSemContato, linkWhatsApp, type Etapa, type Origem, type TipoLead } from "@/lib/regras/leads";
 import { hojeSP } from "@/lib/regras/tarefas";
 import { obterSessao } from "@/lib/sessao";
 
@@ -25,7 +26,7 @@ export async function DetalheLead({ id, emModal = false }: { id: string; emModal
     ? await Promise.all([
         supabase
           .from("leads")
-          .select("id, loja_id, vendedor_id, nome, telefone, origem, etapa, valor_estimado, valor_vendido, motivo_perda, ultimo_contato_em, temperatura, temperatura_manual, resumo_ia, sugestao_ia, ia_em, perfis!leads_vendedor_id_fkey(nome)")
+          .select("id, loja_id, vendedor_id, nome, telefone, tipo, origem, etapa, valor_estimado, valor_vendido, motivo_perda, ultimo_contato_em, temperatura, temperatura_manual, resumo_ia, sugestao_ia, ia_em, perfis!leads_vendedor_id_fkey(nome)")
           .eq("id", id)
           .maybeSingle(),
         supabase.from("lead_eventos").select("id, tipo, texto, criado_em, perfis(nome)").eq("lead_id", id).order("criado_em", { ascending: false }),
@@ -59,7 +60,11 @@ export async function DetalheLead({ id, emModal = false }: { id: string; emModal
         <CardContent className="flex flex-col gap-4">
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <dt className="text-muted-foreground">Telefone</dt>
-            <dd>{lead.telefone || "—"}</dd>
+            <dd>{lead.telefone ? formatarTelefone(lead.telefone) : "—"}</dd>
+            <dt className="text-muted-foreground">Tipo</dt>
+            <dd>
+              <MudarTipo key={lead.tipo} id={lead.id} tipo={lead.tipo as TipoLead} />
+            </dd>
             <dt className="text-muted-foreground">Origem</dt>
             <dd>{ORIGENS.find((o) => o.id === (lead.origem as Origem))?.titulo}</dd>
             <dt className="text-muted-foreground">Valor estimado</dt>

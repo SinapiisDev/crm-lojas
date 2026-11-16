@@ -61,6 +61,7 @@ export default async function PaginaPainel({ searchParams }: PageProps<"/painel"
       .from("leads")
       .select("loja_id, etapa, valor_vendido, criado_em, fechado_em, ultimo_contato_em, perfis!leads_vendedor_id_fkey(nome)")
       .in("loja_id", ids)
+      .eq("tipo", "cliente") // parceiros (arquitetos, construtoras) não são vendas
       .or(`criado_em.gte.${p.inicioAnterior},fechado_em.gte.${p.inicio},etapa.in.(orcamento_enviado,negociacao)`)
       .limit(LIMITE),
     supabase

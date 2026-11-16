@@ -18,6 +18,32 @@ export const ORIGENS: { id: Origem; titulo: string }[] = [
   { id: "outro", titulo: "Outro" },
 ];
 
+export type TipoLead = "cliente" | "parceiro";
+export const TIPOS: { id: TipoLead; titulo: string }[] = [
+  { id: "cliente", titulo: "Clientes" },
+  { id: "parceiro", titulo: "Parceiros" },
+];
+
+export type FiltroLeads = { tipo: TipoLead; busca?: string; temperatura?: string; vendedor?: string; origem?: string };
+type LeadFiltravel = { nome: string; telefone: string; tipo: TipoLead; temperatura: string | null; vendedor: string | null; origem: string };
+
+// Sem acento e minúsculo: "Simoes" acha "Simões".
+const normalizar = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
+// Busca por nome (sem acento) ou por dígitos do telefone; filtros vazios não filtram. "sem" = sem temperatura.
+export function filtrarLeads<T extends LeadFiltravel>(leads: T[], f: FiltroLeads): T[] {
+  const termo = normalizar(f.busca?.trim() ?? "");
+  const digitos = termo.replace(/\D/g, "");
+  return leads.filter(
+    (l) =>
+      l.tipo === f.tipo &&
+      (!termo || normalizar(l.nome).includes(termo) || (digitos.length >= 3 && l.telefone.replace(/\D/g, "").includes(digitos))) &&
+      (!f.temperatura || (f.temperatura === "sem" ? !l.temperatura : l.temperatura === f.temperatura)) &&
+      (!f.vendedor || l.vendedor === f.vendedor) &&
+      (!f.origem || l.origem === f.origem),
+  );
+}
+
 export const MOTIVOS_PERDA = ["Preço", "Sumiu", "Comprou no concorrente", "Outro"];
 
 const DIA_MS = 86_400_000;

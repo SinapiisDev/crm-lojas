@@ -4,7 +4,7 @@ import { admin, criarUsuario, entrar, lojas, sufixo } from "./ajuda";
 const coluna = (page: Page, titulo: string) => page.getByRole("region", { name: titulo });
 
 async function leadNoBanco(loja_id: string, vendedor_id: string, extra: Record<string, unknown> = {}) {
-  const nome = `Cliente ${sufixo()}`;
+  const nome = String(extra.nome ?? `Cliente ${sufixo()}`);
   const { data, error } = await admin
     .from("leads")
     .insert({ loja_id, vendedor_id, nome, telefone: "(11) 98888-7777", origem: "instagram", ...extra })
@@ -20,9 +20,9 @@ test("vendedora cria lead e ele aparece em Novo", async ({ page }) => {
   await entrar(page, v.email);
   const nome = `Paulo ${sufixo()}`;
   await page.getByRole("button", { name: "Novo lead" }).click();
-  await page.getByLabel("Nome").fill(nome);
-  await page.getByLabel("Telefone").fill("(11) 97777-6666");
-  await page.getByLabel("Origem").selectOption({ label: "Instagram" });
+  await page.getByLabel("Nome", { exact: true }).fill(nome);
+  await page.getByLabel("Telefone", { exact: true }).fill("(11) 97777-6666");
+  await page.getByLabel("Origem", { exact: true }).selectOption({ label: "Instagram" });
   await page.getByLabel("Valor estimado").fill("12000");
   await page.getByRole("button", { name: "Salvar lead" }).click();
   await expect(coluna(page, "Novo").getByText(nome)).toBeVisible();
@@ -174,4 +174,32 @@ test("vendedora marca a temperatura; o card mostra e a escolha fica salva", asyn
   await expect(page.getByRole("group", { name: "Temperatura" }).getByRole("button", { name: "Quente" })).toHaveAttribute("aria-pressed", "true");
   await page.goto("/leads");
   await expect(coluna(page, "Em contato").getByRole("link", { name: new RegExp(lead.nome) }).getByText("Quente")).toBeVisible();
+});
+
+test("abas Clientes/Parceiros, busca sem acento e visão em lista", async ({ page }) => {
+  const { loja1 } = await lojas();
+  const v = await criarUsuario("VendAbas", [[loja1, "vendedor"]]);
+  const cliente = await leadNoBanco(loja1, v.id);
+  const s = sufixo();
+  const parceiro = await leadNoBanco(loja1, v.id, { nome: `Arquiteta Simões ${s}`, tipo: "parceiro", telefone: "42 99876-1234" });
+  await entrar(page, v.email);
+
+  await expect(coluna(page, "Novo").getByText(cliente.nome)).toBeVisible();
+  await expect(page.getByText(parceiro.nome)).toHaveCount(0);
+
+  await page.getByRole("tab", { name: /Parceiros/ }).click();
+  await expect(coluna(page, "Novo").getByText(parceiro.nome)).toBeVisible();
+  await expect(page.getByText(cliente.nome)).toHaveCount(0);
+
+  await page.getByLabel("Buscar por nome ou telefone").fill(`simoes ${s}`);
+  await expect(page.getByText("1 lead encontrado.")).toBeVisible();
+  await page.getByLabel("Buscar por nome ou telefone").fill("1234");
+  await expect(page.getByText(parceiro.nome)).toBeVisible();
+
+  await page.getByRole("button", { name: "Ver em lista" }).click();
+  await expect(page.getByRole("row", { name: new RegExp(parceiro.nome) })).toContainText("(42) 99876-1234");
+
+  // Lead novo criado na aba Parceiros já nasce parceiro.
+  await page.getByRole("button", { name: "Novo lead" }).click();
+  await expect(page.getByLabel("Tipo", { exact: true })).toHaveValue("parceiro");
 });

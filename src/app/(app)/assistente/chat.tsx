@@ -136,7 +136,7 @@ export function ChatAssistente({ primeiroNome }: { primeiroNome: string }) {
                     {l.nome} <span className="text-xs font-normal text-muted-foreground">→ {ETAPAS.find((e) => e.id === l.etapa)?.titulo}</span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {l.vendedor} · {l.loja} · {ORIGENS.find((o) => o.id === l.origem)?.titulo}
+                    {l.tipo === "parceiro" ? "Parceiro" : "Cliente"} · {l.vendedor} · {l.loja} · {ORIGENS.find((o) => o.id === l.origem)?.titulo}
                     {l.telefone && ` · ${l.telefone}`}
                     {l.valor_estimado != null && ` · ${formatarMoeda(l.valor_estimado)}`}
                   </p>

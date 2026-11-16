@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { atualizarLeadIA } from "@/lib/ia/leads";
-import { ETAPAS, ORIGENS, validarMudancaEtapa, type Etapa } from "@/lib/regras/leads";
+import { ETAPAS, ORIGENS, TIPOS, validarMudancaEtapa, type Etapa, type TipoLead } from "@/lib/regras/leads";
 import { formatarMoeda } from "@/lib/formatar";
 import { obterSessao, podeGerir } from "@/lib/sessao";
 
@@ -24,6 +24,8 @@ export async function criarLead(_: Resultado, form: FormData): Promise<Resultado
   const valor = String(form.get("valor_estimado") ?? "").replace(",", ".").trim();
   if (!nome) return { erro: "Informe o nome do cliente." };
   if (!ORIGENS.some((o) => o.id === origem)) return { erro: "Escolha a origem." };
+  const tipo = String(form.get("tipo") ?? "cliente");
+  if (!TIPOS.some((t) => t.id === tipo)) return { erro: "Escolha se é cliente ou parceiro." };
   if (valor && !(Number(valor) >= 0)) return { erro: "Valor estimado inválido." };
 
   const vendedorEscolhido = String(form.get("vendedor_id") ?? "");
@@ -37,6 +39,7 @@ export async function criarLead(_: Resultado, form: FormData): Promise<Resultado
       nome,
       telefone: String(form.get("telefone") ?? "").trim(),
       origem,
+      tipo,
       valor_estimado: valor ? Number(valor) : null,
     })
     .select("id")
@@ -102,5 +105,15 @@ export async function definirTemperatura(id: string, temperatura: "quente" | "mo
   if (error) return { erro: error.message === "sem_permissao" ? "Você não tem permissão para isso." : "Não foi possível salvar." };
   // Devolveu para a IA: reanalisa já, senão o lead fica sem temperatura até o próximo contato.
   atualizar(id, temperatura === null);
+  return { ok: true };
+}
+
+export async function mudarTipo(id: string, tipo: TipoLead): Promise<Resultado> {
+  if (!TIPOS.some((t) => t.id === tipo)) return { erro: "Tipo inválido." };
+  const { supabase } = await obterSessao();
+  const { data, error } = await supabase.from("leads").update({ tipo }).eq("id", id).select("id");
+  if (error || !data?.length) return { erro: "Não foi possível mudar." };
+  atualizar(id);
+  revalidatePath("/painel");
   return { ok: true };
 }

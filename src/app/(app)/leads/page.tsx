@@ -1,6 +1,5 @@
 import { AoVivo } from "@/components/comum/ao-vivo";
-import { NovoLead } from "@/components/leads/novo-lead";
-import { Quadro } from "@/components/leads/quadro";
+import { PainelLeads } from "@/components/leads/painel-leads";
 import type { LeadResumo } from "@/components/leads/card-lead";
 import { obterSessao, podeGerir } from "@/lib/sessao";
 
@@ -18,7 +17,7 @@ export default async function PaginaLeads() {
   const [{ data: leads }, { data: equipe }] = await Promise.all([
     supabase
       .from("leads")
-      .select("id, nome, origem, etapa, valor_estimado, valor_vendido, ultimo_contato_em, temperatura, perfis!leads_vendedor_id_fkey(nome), reunioes(inicio)")
+      .select("id, nome, telefone, tipo, origem, etapa, valor_estimado, valor_vendido, ultimo_contato_em, temperatura, perfis!leads_vendedor_id_fkey(nome), reunioes(inicio)")
       .eq("loja_id", lojaAtual.id)
       .gte("reunioes.inicio", new Date().toISOString())
       .eq("reunioes.cancelada", false)
@@ -40,16 +39,8 @@ export default async function PaginaLeads() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Leads · {lojaAtual.nome}</h1>
-        <NovoLead vendedores={vendedores} />
-      </div>
-      <Quadro
-        leads={resumo}
-        diasLimite={lojaAtual.dias_lead_parado}
-        mostrarVendedor={gere}
-        rodapeNovo={<NovoLead vendedores={vendedores} gatilho="rodape" />}
-      />
+      <h1 className="text-2xl font-semibold tracking-tight">Leads · {lojaAtual.nome}</h1>
+      <PainelLeads leads={resumo} diasLimite={lojaAtual.dias_lead_parado} vendedores={vendedores} mostrarVendedor={gere} />
       <AoVivo tabela="leads" lojaId={lojaAtual.id} />
     </div>
   );
