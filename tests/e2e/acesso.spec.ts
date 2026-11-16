@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { admin, criarUsuario, entrar, linkDoEmail, lojas, SENHA, sufixo } from "./ajuda";
+import { admin, criarUsuario, entrar, linkDoEmail, lojaNova, lojas, SENHA, sufixo } from "./ajuda";
 
 test("convite por e-mail: criar senha, sair e entrar de novo", async ({ page }) => {
   const { loja1 } = await lojas();
@@ -106,4 +106,27 @@ test("cadastro de empresa nova: cria a conta e já entra como dona", async ({ pa
   await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(page).not.toHaveURL(/\/(login|cadastro)/);
   await expect(page.getByText(`Loja ${s}`).first()).toBeVisible();
+});
+
+test("dona passa os leads em aberto para a vendedora; vendido fica com ela", async ({ page }) => {
+  const loja = await lojaNova("Passar");
+  const dona = await criarUsuario("DonaPassa", [[loja.id, "dono"]]);
+  const vend = await criarUsuario("VendRecebe", [[loja.id, "vendedor"]]);
+  const s = sufixo();
+  await admin.from("leads").insert([
+    { loja_id: loja.id, vendedor_id: dona.id, nome: `Aberto A ${s}`, etapa: "em_contato" },
+    { loja_id: loja.id, vendedor_id: dona.id, nome: `Aberto B ${s}`, etapa: "negociacao" },
+    { loja_id: loja.id, vendedor_id: dona.id, nome: `Vendido ${s}`, etapa: "vendido", valor_vendido: 100 },
+  ]);
+
+  await entrar(page, dona.email, SENHA, "/equipe");
+  page.on("dialog", (d) => d.accept());
+  await page.getByLabel("Leads de").selectOption({ label: dona.nome });
+  await page.getByLabel("Passar para").selectOption({ label: vend.nome });
+  await page.getByRole("button", { name: "Passar leads" }).click();
+  await expect(page.getByRole("status")).toContainText("2 leads passados.");
+
+  const { data } = await admin.from("leads").select("nome, vendedor_id").eq("loja_id", loja.id).order("nome");
+  const dono = Object.fromEntries(data!.map((l) => [l.nome, l.vendedor_id]));
+  expect(dono).toEqual({ [`Aberto A ${s}`]: vend.id, [`Aberto B ${s}`]: vend.id, [`Vendido ${s}`]: dona.id });
 });
