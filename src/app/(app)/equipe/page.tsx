@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { obterSessao, podeGerir } from "@/lib/sessao";
 import { cancelarConvite } from "./actions";
 import { FormularioConvite } from "./formulario-convite";
+import { PassarLeads } from "./passar-leads";
 
 const NOME_CARGO = { dono: "Dono(a)/Sócio(a)", gerente: "Gerente", vendedor: "Vendedor(a)", conferente: "Conferente" };
 
@@ -16,6 +17,11 @@ export default async function PaginaEquipe() {
       : Promise.resolve({ data: [] as { id: string; email: string; cargo: keyof typeof NOME_CARGO }[] }),
   ]);
 
+  // Conferente não atende leads.
+  const atendem = (membros ?? [])
+    .filter((m) => m.cargo !== "conferente")
+    .map((m) => m.perfis as unknown as { id: string; nome: string });
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <h1 className="text-2xl font-semibold tracking-tight">Equipe · {lojaAtual.nome}</h1>
@@ -27,6 +33,17 @@ export default async function PaginaEquipe() {
           </CardHeader>
           <CardContent>
             <FormularioConvite podeConvidarDono={lojaAtual.cargo === "dono"} />
+          </CardContent>
+        </Card>
+      )}
+
+      {gere && atendem.length > 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Passar leads</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PassarLeads pessoas={atendem} />
           </CardContent>
         </Card>
       )}

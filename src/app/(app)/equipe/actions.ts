@@ -56,3 +56,24 @@ export async function cancelarConvite(id: string) {
   await supabase.from("convites").delete().eq("id", id);
   revalidatePath("/equipe");
 }
+
+export async function passarLeads(_: EstadoConvite, form: FormData): Promise<EstadoConvite> {
+  const { supabase, lojaAtual } = await obterSessao();
+  if (!podeGerir(lojaAtual.cargo)) return { erro: "Só dona, sócios e gerente podem passar leads." };
+  const de = String(form.get("de") ?? "");
+  const para = String(form.get("para") ?? "");
+  if (!de || !para || de === para) return { erro: "Escolha duas pessoas diferentes." };
+
+  // Vendidos ficam com quem vendeu: o painel de vendas por pessoa não muda. O banco (RLS) barra quem não atende leads.
+  const { data, error } = await supabase
+    .from("leads")
+    .update({ vendedor_id: para })
+    .eq("loja_id", lojaAtual.id)
+    .eq("vendedor_id", de)
+    .neq("etapa", "vendido")
+    .select("id");
+  if (error) return { erro: "Não foi possível passar os leads. Conferente não atende leads." };
+  revalidatePath("/leads");
+  revalidatePath("/painel");
+  return { ok: data.length === 1 ? "1 lead passado." : `${data.length} leads passados.` };
+}
