@@ -44,7 +44,7 @@ export function FormularioConvite({ podeConvidarDono }: { podeConvidarDono: bool
         {enviando ? "Enviando..." : "Convidar"}
       </Button>
       {estado.erro && <p role="alert" className="text-sm text-destructive sm:col-span-5">{estado.erro}</p>}
-      {estado.ok && <p role="status" className="text-sm text-green-700 sm:col-span-5">{estado.ok}</p>}
+      {estado.ok && <p role="status" className="text-sm text-sucesso sm:col-span-5">{estado.ok}</p>}
     </form>
   );
 }

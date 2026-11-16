@@ -60,7 +60,7 @@ export async function DetalheTarefa({ id, emModal = false }: { id: string; emMod
             <dd>
               <span>Prazo: {ddmm(t.prazo)}</span> <span className="text-muted-foreground">({textoPrazo(t.prazo, status, hoje)})</span>
               {t.prazo_alterado_vezes > 0 && (
-                <span className="block text-xs text-amber-700">
+                <span className="block text-xs text-atencao">
                   Prazo alterado {t.prazo_alterado_vezes} {t.prazo_alterado_vezes === 1 ? "vez" : "vezes"}
                 </span>
               )}
@@ -74,7 +74,7 @@ export async function DetalheTarefa({ id, emModal = false }: { id: string; emMod
           </dl>
 
           {t.prazo_pedido && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-amber-50 p-3 text-amber-900">
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-atencao/12 p-3 text-atencao">
               <span>
                 Prazo pedido: {ddmm(t.prazo_pedido)}
                 {!gere && " · aguardando aprovação"}

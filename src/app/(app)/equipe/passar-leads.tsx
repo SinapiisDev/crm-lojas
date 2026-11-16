@@ -45,7 +45,7 @@ export function PassarLeads({ pessoas }: { pessoas: Pessoa[] }) {
         Leva todos os leads em aberto, com histórico, reuniões e anotações. Os vendidos continuam com quem vendeu.
       </p>
       {estado.erro && <p role="alert" className="text-sm text-destructive sm:col-span-3">{estado.erro}</p>}
-      {estado.ok && <p role="status" className="text-sm text-green-700 sm:col-span-3">{estado.ok}</p>}
+      {estado.ok && <p role="status" className="text-sm text-sucesso sm:col-span-3">{estado.ok}</p>}
     </form>
   );
 }

@@ -88,9 +88,9 @@ export async function DetalheLead({ id, emModal = false }: { id: string; emModal
           </div>
           {/* Só mostra sugestão feita depois do último contato e com o lead em aberto (senão já foi usada). */}
           {lead.sugestao_ia && lead.ia_em && lead.ia_em >= lead.ultimo_contato_em && !["vendido", "perdido"].includes(lead.etapa) && (
-            <section aria-label="Sugestão da IA" className="flex flex-col gap-2 rounded-lg bg-sky-50 p-3 text-sky-950">
+            <section aria-label="Sugestão da IA" className="flex flex-col gap-2 rounded-lg bg-primary/12 p-3 text-foreground ring-1 ring-primary/30">
               <span className="text-xs font-semibold uppercase tracking-wide">Sugestão da IA</span>
-              <p className="rounded-md bg-white p-2 italic">{lead.sugestao_ia}</p>
+              <p className="rounded-md bg-card p-2 italic">{lead.sugestao_ia}</p>
               {linkWhatsApp(lead.telefone, lead.sugestao_ia) && (
                 <BotaoWhatsApp id={lead.id} link={linkWhatsApp(lead.telefone, lead.sugestao_ia)!} rotulo="Enviar sugestão no WhatsApp" />
               )}
@@ -112,7 +112,7 @@ export async function DetalheLead({ id, emModal = false }: { id: string; emModal
       <section aria-label="Conversa até agora" className="flex flex-col gap-3 rounded-3xl bg-card p-5 text-sm shadow-card">
         <h2 className="text-base font-semibold tracking-tight">Conversa até agora</h2>
         {lead.resumo_ia && (
-          <div className="rounded-2xl bg-sky-50 p-3 text-sky-950">
+          <div className="rounded-2xl bg-primary/12 p-3 text-foreground ring-1 ring-primary/30">
             <span className="text-xs font-semibold uppercase tracking-wide">Resumo da IA</span>
             <p className="mt-1">{lead.resumo_ia}</p>
           </div>
@@ -140,7 +140,7 @@ export async function DetalheLead({ id, emModal = false }: { id: string; emModal
                 className={
                   m.de_cliente
                     ? "max-w-[85%] self-start rounded-2xl rounded-bl-md bg-muted px-3 py-2"
-                    : "max-w-[85%] self-end rounded-2xl rounded-br-md bg-emerald-100 px-3 py-2 text-emerald-950"
+                    : "max-w-[85%] self-end rounded-2xl rounded-br-md bg-sucesso/15 px-3 py-2 text-foreground"
                 }
               >
                 <p className="whitespace-pre-line">{m.texto ?? <span className="italic text-muted-foreground">[{m.tipo}]</span>}</p>
