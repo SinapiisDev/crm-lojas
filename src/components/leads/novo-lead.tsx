@@ -7,16 +7,18 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { criarLead, type Resultado } from "@/app/(app)/leads/actions";
-import { ORIGENS } from "@/lib/regras/leads";
+import { ORIGENS, TIPOS, type TipoLead } from "@/lib/regras/leads";
 
 const campoSelect = "h-9 rounded-xl border border-input bg-card px-3 text-sm";
 
 export function NovoLead({
   vendedores,
   gatilho = "botao",
+  tipo = "cliente",
 }: {
   vendedores: { id: string; nome: string }[] | null;
   gatilho?: "botao" | "rodape";
+  tipo?: TipoLead;
 }) {
   const [aberto, setAberto] = useState(false);
   const [estado, enviar, enviando] = useActionState<Resultado, FormData>(async (anterior, form) => {
@@ -53,6 +55,16 @@ export function NovoLead({
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="telefone">Telefone</Label>
               <Input id="telefone" name="telefone" type="tel" placeholder="(11) 98888-7777" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="tipo">Tipo</Label>
+              <select id="tipo" name="tipo" className={campoSelect} defaultValue={tipo} key={tipo}>
+                {TIPOS.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.id === "cliente" ? "Cliente (vai comprar)" : "Parceiro (arquiteto, construtora, imobiliária)"}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">

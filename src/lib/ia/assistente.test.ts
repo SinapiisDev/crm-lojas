@@ -44,6 +44,7 @@ const lead = (extra: object = {}) => ({
   loja_id: L1,
   nome: "Maria",
   telefone: "(42) 99999-0000",
+  tipo: "cliente" as const,
   origem: "instagram" as const,
   etapa: "em_contato" as const,
   valor_estimado: 3000,

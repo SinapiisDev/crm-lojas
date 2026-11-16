@@ -2,12 +2,14 @@ import { CalendarClock, Clock } from "lucide-react";
 import Link from "next/link";
 import { Etiqueta, estiloCard, type CorEtiqueta } from "@/components/comum/quadro";
 import { formatarDataHora, formatarMoeda, textoSemContato } from "@/lib/formatar";
-import { ORIGENS, diasSemContato, leadParado, type Etapa, type Origem } from "@/lib/regras/leads";
+import { ORIGENS, diasSemContato, leadParado, type Etapa, type Origem, type TipoLead } from "@/lib/regras/leads";
 import { cn } from "@/lib/utils";
 
 export type LeadResumo = {
   id: string;
   nome: string;
+  telefone: string;
+  tipo: TipoLead;
   origem: Origem;
   etapa: Etapa;
   valor_estimado: number | null;
@@ -18,7 +20,7 @@ export type LeadResumo = {
   reuniao?: string | null;
 };
 
-const TEMPERATURA: Record<string, { texto: string; cor: CorEtiqueta }> = {
+export const TEMPERATURA: Record<string, { texto: string; cor: CorEtiqueta }> = {
   quente: { texto: "Quente", cor: "vermelho" },
   morno: { texto: "Morno", cor: "ambar" },
   frio: { texto: "Frio", cor: "azul" },

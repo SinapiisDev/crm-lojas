@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { ETAPAS, diasSemContato, leadParado, linkWhatsApp, validarMudancaEtapa } from "./leads";
+import { ETAPAS, diasSemContato, filtrarLeads, leadParado, linkWhatsApp, validarMudancaEtapa } from "./leads";
 
 const agora = new Date("2026-11-10T12:00:00-03:00");
 const haDias = (n: number) => new Date(agora.getTime() - n * 86_400_000).toISOString();
@@ -71,5 +71,29 @@ describe("validarMudancaEtapa", () => {
   });
   test("outras etapas não exigem nada", () => {
     expect(validarMudancaEtapa("negociacao", {})).toBeNull();
+  });
+});
+
+describe("filtrarLeads", () => {
+  const base = { telefone: "", temperatura: null, vendedor: "Ari", origem: "prospeccao" };
+  const leads = [
+    { ...base, nome: "Construtora Simões", telefone: "42999143583", tipo: "parceiro" as const, temperatura: "quente" },
+    { ...base, nome: "Maria Kluge", telefone: "(42) 99804-5727", tipo: "cliente" as const, vendedor: "Thamilly", origem: "instagram" },
+    { ...base, nome: "Arq. Renata", tipo: "parceiro" as const },
+  ];
+  const nomes = (f: Parameters<typeof filtrarLeads>[1]) => filtrarLeads(leads, f).map((l) => l.nome);
+
+  test("separa por tipo e busca sem acento ou por pedaço do telefone", () => {
+    expect(nomes({ tipo: "parceiro" })).toEqual(["Construtora Simões", "Arq. Renata"]);
+    expect(nomes({ tipo: "parceiro", busca: "simoes" })).toEqual(["Construtora Simões"]);
+    expect(nomes({ tipo: "cliente", busca: "9980" })).toEqual(["Maria Kluge"]);
+    expect(nomes({ tipo: "cliente", busca: "kluge 2" })).toEqual([]);
+  });
+
+  test("filtra por temperatura (inclusive sem temperatura), responsável e origem", () => {
+    expect(nomes({ tipo: "parceiro", temperatura: "quente" })).toEqual(["Construtora Simões"]);
+    expect(nomes({ tipo: "parceiro", temperatura: "sem" })).toEqual(["Arq. Renata"]);
+    expect(nomes({ tipo: "cliente", vendedor: "Ari" })).toEqual([]);
+    expect(nomes({ tipo: "cliente", origem: "instagram" })).toEqual(["Maria Kluge"]);
   });
 });
