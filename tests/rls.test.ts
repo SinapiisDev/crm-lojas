@@ -247,3 +247,22 @@ describe("datas do lead não são escolhidas pela vendedora (revisão Plano 3)",
     expect(depois!.criado_em).toBe(antes!.criado_em);
   });
 });
+
+describe("remover da loja", () => {
+  const removidos = async (cliente: SupabaseClient, usuario: string) =>
+    (await cliente.from("membros").delete().eq("usuario_id", usuario).eq("loja_id", loja1).select("usuario_id")).data ?? [];
+
+  test("vendedora não tira ninguém; gerente não tira o dono; ninguém tira a si mesmo", async () => {
+    expect(await removidos(vendA.cliente, vendB.id)).toEqual([]);
+    expect(await removidos(gerente.cliente, dono.id)).toEqual([]);
+    expect(await removidos(dono.cliente, dono.id)).toEqual([]);
+  });
+
+  test("dono e gerente tiram vendedora, que deixa de ver a loja", async () => {
+    const saiu = await criarUsuario("saiu", [[loja1, "vendedor"]]);
+    const saiu2 = await criarUsuario("saiu2", [[loja1, "vendedor"]]);
+    expect(await removidos(dono.cliente, saiu.id)).toHaveLength(1);
+    expect(await removidos(gerente.cliente, saiu2.id)).toHaveLength(1);
+    expect((await saiu.cliente.from("lojas").select("id")).data).toEqual([]);
+  });
+});

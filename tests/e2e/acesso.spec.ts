@@ -130,3 +130,29 @@ test("dona passa os leads em aberto para a vendedora; vendido fica com ela", asy
   const dono = Object.fromEntries(data!.map((l) => [l.nome, l.vendedor_id]));
   expect(dono).toEqual({ [`Aberto A ${s}`]: vend.id, [`Aberto B ${s}`]: vend.id, [`Vendido ${s}`]: dona.id });
 });
+
+test("dona remove vendedora só depois de passar os leads; ela perde o acesso", async ({ page, browser }) => {
+  const loja = await lojaNova("Remover");
+  const dona = await criarUsuario("DonaRemove", [[loja.id, "dono"]]);
+  const vend = await criarUsuario("VendSai", [[loja.id, "vendedor"]]);
+  await admin.from("leads").insert({ loja_id: loja.id, vendedor_id: vend.id, nome: `Dela ${sufixo()}`, etapa: "em_contato" });
+
+  await entrar(page, dona.email, SENHA, "/equipe");
+  page.on("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: `Remover ${vend.nome}` }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "1 lead(s) em aberto" })).toBeVisible();
+
+  await page.getByLabel("Leads de").selectOption({ label: vend.nome });
+  await page.getByLabel("Passar para").selectOption({ label: dona.nome });
+  await page.getByRole("button", { name: "Passar leads" }).click();
+  await expect(page.getByRole("status")).toContainText("1 lead passado.");
+  await page.getByRole("button", { name: `Remover ${vend.nome}` }).click();
+  await expect(page.getByText(vend.email)).toHaveCount(0);
+
+  const outra = await browser.newPage();
+  await outra.goto("/login");
+  await outra.getByLabel("E-mail").fill(vend.email);
+  await outra.getByLabel("Senha", { exact: true }).fill(SENHA);
+  await outra.getByRole("button", { name: "Entrar", exact: true }).click();
+  await expect(outra).toHaveURL(/erro=sem-loja/);
+});
