@@ -5,7 +5,7 @@ export function Marca() {
       <div className="flex size-14 items-center justify-center rounded-2xl bg-primary-foreground text-2xl font-bold text-primary shadow-card">
         C
       </div>
-      <p className="text-2xl font-semibold tracking-tight">Nome da empresa</p>
+      <p className="text-2xl font-semibold tracking-tight">CRM Lojas</p>
       <p className="max-w-xs text-sm italic opacity-80">“Cada lead, cada tarefa, no lugar certo.”</p>
     </div>
   );
