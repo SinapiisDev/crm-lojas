@@ -115,11 +115,22 @@ describe("rotina diária", () => {
 
   test("aviso traz telefone, sugestão e link do WhatsApp", async () => {
     const v = await criarUsuario("tel", "vendedor");
-    const { data } = await parado(v.id, `Ana ${sufixo}`, 3, { telefone: "42999143583", sugestao_ia: "Oi Ana, tudo bem?" });
+    const { data } = await parado(v.id, `Ana ${sufixo}`, 3, { telefone: "42999143583", sugestao_ia: "Oi Ana, tudo bem?", ia_em: new Date().toISOString() });
     await rotina();
     const [aviso] = await parados(v);
     expect(aviso.texto).toBe('Sem contato há 3 dias. Tel. (42) 99914-3583. Sugestão: "Oi Ana, tudo bem?"');
     expect(aviso.link).toBe(`/leads/${data!.id}/whatsapp`);
+  });
+
+  test("sugestão anterior ao último contato não vai no aviso", async () => {
+    const v = await criarUsuario("velha", "vendedor");
+    await parado(v.id, `Velha ${sufixo}`, 3, {
+      sugestao_ia: "Oi, conseguiu ver o orçamento?", resumo_ia: "Pediu orçamento.",
+      ia_em: new Date(Date.now() - 5 * 86_400_000).toISOString(),
+    });
+    await rotina();
+    const [aviso] = await parados(v);
+    expect(aviso.texto).toBe("Sem contato há 3 dias. Pediu orçamento.");
   });
 
   test("cliente novo ou em contato parado também avisa; cliente vem antes de parceiro", async () => {

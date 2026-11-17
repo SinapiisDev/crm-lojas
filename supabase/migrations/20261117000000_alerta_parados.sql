@@ -34,7 +34,7 @@ begin
                       p.ultimo_contato_em
            ) as pos
     from (
-      select l.id, l.nome, l.vendedor_id, l.loja_id, l.etapa, l.tipo, l.telefone, l.ultimo_contato_em, l.resumo_ia, l.sugestao_ia
+      select l.id, l.nome, l.vendedor_id, l.loja_id, l.etapa, l.tipo, l.telefone, l.ultimo_contato_em, l.resumo_ia, l.sugestao_ia, l.ia_em
       from leads l join lojas j on j.id = l.loja_id
       where l.etapa in ('novo', 'em_contato', 'orcamento_enviado', 'negociacao')
         and l.ultimo_contato_em <= now() - make_interval(days => case when l.tipo = 'parceiro' then 15 else j.dias_lead_parado end)
@@ -46,7 +46,9 @@ begin
       perform avisar_uma_vez(r.vendedor_id, r.loja_id, 'Lead parado: ' || r.nome,
         'Sem contato há ' || v_dias || ' dias.'
           || coalesce(' Tel. ' || formatar_telefone(v_tel) || '.', '')
-          || ' ' || coalesce('Sugestão: "' || nullif(trim(r.sugestao_ia), '') || '"', nullif(trim(r.resumo_ia), ''), 'Entre em contato de novo.'),
+          -- Sugestão escrita antes do último contato já foi usada ou ficou velha (mesma regra da página do lead).
+          || ' ' || coalesce(case when r.ia_em >= r.ultimo_contato_em then 'Sugestão: "' || nullif(trim(r.sugestao_ia), '') || '"' end,
+                             nullif(trim(r.resumo_ia), ''), 'Entre em contato de novo.'),
         '/leads/' || r.id || case when v_tel is not null then '/whatsapp' else '' end,
         'parado:' || r.id || ':' || v_hoje);
     elsif r.pos = 6 then

@@ -7,8 +7,14 @@ import { criarClienteServidor } from "@/lib/supabase/server";
 export async function GET(request: NextRequest, { params }: RouteContext<"/leads/[id]/whatsapp">) {
   const { id } = await params;
   const supabase = await criarClienteServidor();
-  const { data: lead } = await supabase.from("leads").select("telefone, sugestao_ia").eq("id", id).maybeSingle();
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("telefone, sugestao_ia, ia_em, ultimo_contato_em, etapa")
+    .eq("id", id)
+    .maybeSingle();
   if (!lead) return NextResponse.redirect(new URL("/leads", request.url));
-  const link = linkWhatsApp(lead.telefone ?? "", lead.sugestao_ia ?? undefined);
+  // Mesma regra da página do lead: sugestão só vale se for depois do último contato e com o lead em aberto.
+  const vale = lead.etapa !== "vendido" && lead.etapa !== "perdido" && !!lead.ia_em && lead.ia_em >= lead.ultimo_contato_em;
+  const link = linkWhatsApp(lead.telefone ?? "", vale ? (lead.sugestao_ia ?? undefined) : undefined);
   return NextResponse.redirect(link ?? new URL(`/leads/${id}`, request.url));
 }

@@ -213,11 +213,24 @@ test.describe("abrir WhatsApp pelo aviso", () => {
     const dona = await criarUsuario("Dona", [[loja1, "dono"]]);
     const sugestao = 'Oi "Ana", tudo bem? 😊';
     const lead = await leadNoBanco(loja1, dona.id, { telefone: "42999143583" });
-    await admin.from("leads").update({ sugestao_ia: sugestao }).eq("id", lead.id);
+    await admin.from("leads").update({ sugestao_ia: sugestao, ia_em: new Date().toISOString() }).eq("id", lead.id);
     await entrar(page, dona.email);
     const r = await abrir(page, lead.id);
     expect(r.status()).toBe(307);
     expect(r.headers()["location"]).toBe(linkWhatsApp("42999143583", sugestao));
+  });
+
+  test("sugestão velha ou lead fechado abre o WhatsApp sem texto", async ({ page }) => {
+    const { loja1 } = await lojas();
+    const dona = await criarUsuario("Dona", [[loja1, "dono"]]);
+    const velha = await leadNoBanco(loja1, dona.id, { telefone: "42999143583" });
+    await admin.from("leads").update({ sugestao_ia: "Oi!", ia_em: "2020-01-01T00:00:00Z" }).eq("id", velha.id);
+    const vendido = await leadNoBanco(loja1, dona.id, { telefone: "42999143583", etapa: "vendido", valor_vendido: 1000 });
+    await admin.from("leads").update({ sugestao_ia: "Oi!", ia_em: new Date().toISOString() }).eq("id", vendido.id);
+    await entrar(page, dona.email);
+    for (const lead of [velha, vendido]) {
+      expect((await abrir(page, lead.id)).headers()["location"]).toBe(linkWhatsApp("42999143583"));
+    }
   });
 
   test("telefone inválido cai na página do lead", async ({ page }) => {
