@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { formatarMoeda } from "@/lib/formatar";
-import { leadParado, type Etapa, type TipoLead } from "@/lib/regras/leads";
+import { leadParado, type Etapa } from "@/lib/regras/leads";
 import {
   periodo,
   resumoPorLoja,
@@ -140,22 +140,9 @@ export async function rotinaIA(
     modelo = criarModelo();
   }
   const admin = criarClienteAdmin();
-  const [{ data: lojas }, { data: candidatos }] = await Promise.all([
-    admin.from("lojas").select("id, dias_lead_parado"),
-    admin
-      .from("leads")
-      .select("id, loja_id, etapa, tipo, ultimo_contato_em, ia_em")
-      .in("etapa", ["novo", "em_contato", "orcamento_enviado", "negociacao"])
-      .lte("ultimo_contato_em", new Date(Date.now() - 86_400_000).toISOString())
-      .order("ultimo_contato_em", { ascending: true })
-      .limit(1000),
-  ]);
-  const limite = new Map((lojas ?? []).map((l) => [l.id, l.dias_lead_parado]));
-  const tresDias = Date.now() - 3 * 86_400_000;
-  const fila = (candidatos ?? [])
-    .filter((l) => leadParado({ etapa: l.etapa as Etapa, ultimo_contato_em: l.ultimo_contato_em, tipo: l.tipo as TipoLead }, limite.get(l.loja_id) ?? 2))
-    .filter((l) => !l.ia_em || l.ia_em < l.ultimo_contato_em || Date.parse(l.ia_em) < tresDias)
-    .slice(0, MAX_LEADS_POR_ROTINA);
+  // Parados que precisam de análise, já na ordem do aviso das 8h (regra no banco: fila_ia).
+  const { data: fila, error } = await admin.rpc("fila_ia", { p_limite: MAX_LEADS_POR_ROTINA });
+  if (error) console.error("ler fila da IA falhou", error);
 
   // Segunda: o resumo da dona vem primeiro, para não ficar sem tempo atrás das análises.
   const segunda = new Date(hoje + "T12:00:00Z").getUTCDay() === 1;
@@ -164,7 +151,7 @@ export async function rotinaIA(
   // Chave vencida, sem crédito ou API fora: 3 falhas seguidas e para (nada de 50 chamadas inúteis).
   let leads = 0;
   let falhasSeguidas = 0;
-  for (const l of fila) {
+  for (const l of fila ?? []) {
     if (Date.now() > prazo) break;
     if (await atualizarLeadIA(l.id, modelo)) {
       leads++;
