@@ -266,3 +266,38 @@ describe("remover da loja", () => {
     expect((await saiu.cliente.from("lojas").select("id")).data).toEqual([]);
   });
 });
+
+describe("assistente", () => {
+  test("memória da loja: gerência lê e cria; vendedora e outra loja não", async () => {
+    const texto = `cobrar parceiros às terças ${sufixo}`;
+    const { error } = await gerente.cliente.from("memorias_ia").insert({ loja_id: loja1, texto, criado_por: gerente.id });
+    expect(error).toBeNull();
+    const ver = async (c: SupabaseClient) => ((await c.from("memorias_ia").select("texto").eq("texto", texto)).data ?? []).length;
+    expect(await ver(gerente.cliente)).toBe(1);
+    expect(await ver(dono.cliente)).toBe(1);
+    expect(await ver(vendA.cliente)).toBe(0);
+    expect((await vendA.cliente.from("memorias_ia").insert({ loja_id: loja1, texto: "x", criado_por: vendA.id })).error).not.toBeNull();
+
+    const daOutra = `só da loja 2 ${sufixo}`;
+    await dono.cliente.from("memorias_ia").insert({ loja_id: loja2, texto: daOutra, criado_por: dono.id });
+    expect(((await gerente.cliente.from("memorias_ia").select("id").eq("texto", daOutra)).data ?? []).length).toBe(0);
+
+    const longa = await gerente.cliente.from("memorias_ia").insert({ loja_id: loja1, texto: "a".repeat(301), criado_por: gerente.id });
+    expect(longa.error).not.toBeNull();
+  });
+
+  test("sugestões do dia: só a gerência lê e ninguém grava pelo app", async () => {
+    await admin.from("sugestoes_ia").insert({ loja_id: loja1, dia: "2000-01-01", itens: [{ texto: "t", pedido: "p" }] });
+    const ler = async (c: SupabaseClient) => ((await c.from("sugestoes_ia").select("id").eq("loja_id", loja1).eq("dia", "2000-01-01")).data ?? []).length;
+    expect(await ler(gerente.cliente)).toBe(1);
+    expect(await ler(vendA.cliente)).toBe(0);
+    expect((await gerente.cliente.from("sugestoes_ia").insert({ loja_id: loja1, dia: "2000-01-02", itens: [] })).error).not.toBeNull();
+  });
+
+  test("conversa do assistente é só de quem conversou", async () => {
+    expect((await gerente.cliente.from("conversas_ia").upsert({ usuario_id: gerente.id, mensagens: [{ autor: "voce", texto: "oi" }] })).error).toBeNull();
+    expect(((await gerente.cliente.from("conversas_ia").select("usuario_id")).data ?? []).length).toBe(1);
+    expect(((await dono.cliente.from("conversas_ia").select("usuario_id").eq("usuario_id", gerente.id)).data ?? []).length).toBe(0);
+    expect((await dono.cliente.from("conversas_ia").insert({ usuario_id: gerente.id })).error).not.toBeNull();
+  });
+});

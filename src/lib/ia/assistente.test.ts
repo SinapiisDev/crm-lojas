@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { promptAssistente, responderAssistente, validarLeads, validarPropostas, type Pessoa } from "./assistente";
+import { SISTEMA_ASSISTENTE, promptAssistente, responderAssistente, validarLeads, validarMemorias, validarPropostas, type Pessoa } from "./assistente";
 import type { ModeloIA, PedidoIA } from "./modelo";
 
 const HOJE = "2026-11-10"; // terça
@@ -74,12 +74,42 @@ describe("validarLeads", () => {
   });
 });
 
+describe("validarMemorias", () => {
+  test("só lojas da equipe, texto aparado entre 1 e 300 e sem repetir", () => {
+    expect(
+      validarMemorias(
+        [
+          { loja_id: L1, texto: "  Cobrança de parceiro às terças  " },
+          { loja_id: L1, texto: "Cobrança de parceiro às terças" },
+          { loja_id: "outra-loja", texto: "não é da equipe" },
+          { loja_id: L2, texto: "   " },
+          { loja_id: L2, texto: "a".repeat(301) },
+        ],
+        EQUIPE,
+      ),
+    ).toEqual([{ loja_id: L1, texto: "Cobrança de parceiro às terças", loja: "Loja 1" }]);
+  });
+});
+
 describe("promptAssistente", () => {
   test("leva hoje com dia da semana, a equipe com ids e a conversa", () => {
     const p = promptAssistente({ hoje: HOJE, equipe: EQUIPE, conversa: [{ autor: "voce", texto: "Ana liga pro Paulo até sexta" }] });
     expect(p).toContain("Hoje: terça-feira, 2026-11-10");
     expect(p).toContain(`Ana Souza (vendedor, Loja 1) id=${ANA} loja_id=${L1}`);
     expect(p).toContain("Chefe: Ana liga pro Paulo até sexta");
+  });
+
+  test("retrato vem primeiro e memórias propostas aparecem", () => {
+    const p = promptAssistente({
+      hoje: HOJE, equipe: EQUIPE, conversa: [{ autor: "voce", texto: "oi" }], retrato: "## Loja: Loja 1\nParados: 3.",
+      pendentesMemorias: [{ loja_id: L1, texto: "Cobrança às terças", loja: "Loja 1" }],
+    });
+    expect(p.indexOf("<retrato>")).toBeLessThan(p.indexOf("Hoje:"));
+    expect(p).toContain("Parados: 3.");
+    expect(p).toContain("Memórias já propostas:");
+    expect(p).toContain("Cobrança às terças");
+    expect(SISTEMA_ASSISTENTE).toContain("retrato");
+    expect(SISTEMA_ASSISTENTE).toContain("não sabe");
   });
 
   test("texto da conversa não fecha o bloco de dados", () => {
@@ -93,12 +123,16 @@ describe("responderAssistente", () => {
     const pedidos: PedidoIA<unknown>[] = [];
     const modelo = (async (p: PedidoIA<unknown>) => {
       pedidos.push(p);
-      return { resposta: "Anotei duas tarefas.", tarefas: [tarefa(), tarefa({ responsavel_id: "inventado" })], leads: [lead(), lead({ loja_id: L2 })] };
+      return {
+        resposta: "Anotei duas tarefas.", tarefas: [tarefa(), tarefa({ responsavel_id: "inventado" })], leads: [lead(), lead({ loja_id: L2 })],
+        memorias: [{ loja_id: L1, texto: "Cobrança às terças" }, { loja_id: "outra", texto: "x" }],
+      };
     }) as ModeloIA;
     const r = await responderAssistente({ hoje: HOJE, equipe: EQUIPE, conversa: [{ autor: "voce", texto: "oi" }] }, modelo);
     expect(r?.resposta).toBe("Anotei duas tarefas.");
     expect(r?.tarefas.map((t) => t.responsavel)).toEqual(["Ana Souza"]);
     expect(r?.leads.map((l) => l.vendedor)).toEqual(["Ana Souza"]);
+    expect(r?.memorias).toEqual([{ loja_id: L1, texto: "Cobrança às terças", loja: "Loja 1" }]);
     expect(pedidos).toHaveLength(1);
   });
 
