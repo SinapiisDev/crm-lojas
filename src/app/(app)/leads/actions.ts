@@ -98,6 +98,11 @@ export async function registrarWhatsApp(id: string): Promise<Resultado> {
   return registrar(id, "whatsapp", "Abriu o WhatsApp");
 }
 
+// "Já mandei" no aviso de lead parado: a mensagem saiu pelo WhatsApp do celular, fora do CRM.
+export async function marcarMensagemEnviada(id: string): Promise<Resultado> {
+  return registrar(id, "whatsapp", "Mandou mensagem pelo aviso de lead parado");
+}
+
 // Temperatura escolhida pela vendedora; null devolve a escolha para a IA.
 export async function definirTemperatura(id: string, temperatura: "quente" | "morno" | "frio" | null): Promise<Resultado> {
   const { supabase } = await obterSessao();
