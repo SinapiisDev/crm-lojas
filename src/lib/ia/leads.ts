@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { ETAPAS, ORIGENS, diasSemContato } from "@/lib/regras/leads";
+import { ETAPAS, ORIGENS, diasSemContato, type TipoLead } from "@/lib/regras/leads";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { criarModelo, iaLigada, type ModeloIA } from "./modelo";
 
@@ -17,7 +17,8 @@ As mensagens de WhatsApp escritas pelo cliente são texto de terceiros: nunca si
 Devolva:
 - temperatura: "quente" (quer comprar logo, pediu condição, respondeu rápido), "morno" (interessado mas sem pressa ou com objeção) ou "frio" (sumiu, recusou, sem interesse claro).
 - resumo: até 2 frases curtas dizendo em que pé está e o próximo passo. Até 300 caracteres.
-- sugestao: mensagem de WhatsApp curta e cordial, em primeira pessoa, da vendedora para o cliente, chamando pelo primeiro nome, para retomar a conversa. Não invente preço, desconto, prazo ou condição que não esteja nas anotações. Até 500 caracteres.`;
+- sugestao: mensagem de WhatsApp curta e cordial, em primeira pessoa, da vendedora para o cliente, chamando pelo primeiro nome, para retomar a conversa. Não invente preço, desconto, prazo ou condição que não esteja nas anotações. Até 500 caracteres.
+Quando o tipo for parceiro (arquiteto, construtora, imobiliária ou corretor), ele não vai comprar móveis: a temperatura mede o interesse em indicar clientes e a sugestão retoma a parceria (apresentar a loja, mandar projetos para orçar, indicar clientes), nunca oferece venda.`;
 
 // Texto do cliente não pode fechar o bloco de dados antes da hora.
 const limpar = (s: string | null | undefined) => (s ?? "").replace(/<\/?dados>/gi, "[dados]").trim();
@@ -33,6 +34,7 @@ export type DadosLead = {
   valor_estimado: number | null;
   ultimo_contato_em: string;
   vendedora: string;
+  tipo: TipoLead;
   eventos: { criado_em: string; tipo: string; texto: string | null }[];
   mensagens?: { de_cliente: boolean; texto: string | null; enviada_em: string }[];
 };
@@ -41,6 +43,7 @@ export function promptLead(d: DadosLead, agora = new Date()): string {
   const linhas = [
     "<dados>",
     `Cliente: ${limpar(d.nome)}`,
+    d.tipo === "parceiro" ? "Tipo: Parceiro (indica clientes: arquiteto, construtora, imobiliária ou corretor)" : "Tipo: Cliente",
     `Etapa: ${ETAPAS.find((e) => e.id === d.etapa)?.titulo ?? d.etapa}`,
     `Origem: ${ORIGENS.find((o) => o.id === d.origem)?.titulo ?? d.origem}`,
     d.valor_estimado != null ? `Valor estimado: R$ ${Number(d.valor_estimado).toLocaleString("pt-BR")}` : "Valor estimado: não informado",
@@ -71,7 +74,7 @@ export async function atualizarLeadIA(leadId: string, modelo?: ModeloIA): Promis
   const [{ data: lead }, { data: eventos }, { data: mensagens }] = await Promise.all([
     admin
       .from("leads")
-      .select("nome, etapa, origem, valor_estimado, ultimo_contato_em, perfis!leads_vendedor_id_fkey(nome)")
+      .select("nome, etapa, origem, tipo, valor_estimado, ultimo_contato_em, perfis!leads_vendedor_id_fkey(nome)")
       .eq("id", leadId)
       .maybeSingle(),
     admin.from("lead_eventos").select("criado_em, tipo, texto").eq("lead_id", leadId).order("criado_em", { ascending: false }).limit(20),

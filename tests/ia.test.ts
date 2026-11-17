@@ -166,6 +166,18 @@ describe("núcleo da IA", () => {
     expect(pedidos.some((p) => p.conteudo.includes(`Fresco ${sufixo}`))).toBe(false);
   });
 
+  test("fila da IA segue a ordem do aviso: cliente parado antes de parceiro antigo", async () => {
+    // Datas bem antigas: o banco local acumula parados de outras execuções e a fila é de todas as lojas.
+    const haDias = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+    await admin.from("leads").insert(
+      Array.from({ length: 55 }, (_, i) => ({ loja_id: loja, vendedor_id: vend.id, nome: `parc-${i}-${sufixo}`, tipo: "parceiro", etapa: "em_contato", ultimo_contato_em: haDias(500) })),
+    );
+    await leadParado(`Cliente quente ${sufixo}`, { ultimo_contato_em: haDias(400) });
+    const { modelo, pedidos } = modeloFalso(resposta);
+    await rotinaIA("2026-11-10", modelo);
+    expect(pedidos.some((p) => p.conteudo.includes(`Cliente quente ${sufixo}`))).toBe(true);
+  });
+
   test("na segunda o resumo da semana sai antes das análises de leads (C1)", async () => {
     const { modelo, pedidos } = modeloFalso({ texto: "Resumo de segunda.", ...resposta });
     // Próxima segunda depois de hoje: os dados criados agora caem na semana resumida (data fixa vencia).

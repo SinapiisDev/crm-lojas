@@ -16,6 +16,11 @@ self.addEventListener("notificationclick", (event) => {
   let destino = new URL(event.notification.data?.link || "/avisos", self.location.origin);
   // Só abre páginas do próprio CRM.
   if (destino.origin !== self.location.origin) destino = new URL("/avisos", self.location.origin);
+  // Atalho para o WhatsApp do lead: abre à parte, sem trocar a tela do CRM que estiver aberta.
+  if (destino.pathname.endsWith("/whatsapp")) {
+    event.waitUntil(self.clients.openWindow(destino.href));
+    return;
+  }
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((janelas) => {
       for (const janela of janelas) {

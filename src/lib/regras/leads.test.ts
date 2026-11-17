@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { ETAPAS, diasSemContato, filtrarLeads, leadParado, linkWhatsApp, validarMudancaEtapa } from "./leads";
+import { DIAS_PARCEIRO_PARADO, ETAPAS, diasSemContato, filtrarLeads, leadParado, linkWhatsApp, validarMudancaEtapa, type Etapa } from "./leads";
 
 const agora = new Date("2026-11-10T12:00:00-03:00");
 const haDias = (n: number) => new Date(agora.getTime() - n * 86_400_000).toISOString();
@@ -18,17 +18,26 @@ describe("ETAPAS", () => {
 });
 
 describe("leadParado", () => {
-  test("negociação com contato há 2 dias e limite 2 está parado", () => {
-    expect(leadParado({ etapa: "negociacao", ultimo_contato_em: haDias(2) }, 2, agora)).toBe(true);
+  const cliente = (etapa: Etapa, dias: number) => ({ etapa, ultimo_contato_em: haDias(dias), tipo: "cliente" as const });
+  const parceiro = (etapa: Etapa, dias: number) => ({ etapa, ultimo_contato_em: haDias(dias), tipo: "parceiro" as const });
+  test("cliente em negociação há 2 dias com limite 2 está parado", () => {
+    expect(leadParado(cliente("negociacao", 2), 2, agora)).toBe(true);
   });
-  test("orçamento enviado há 1 dia não está parado", () => {
-    expect(leadParado({ etapa: "orcamento_enviado", ultimo_contato_em: haDias(1) }, 2, agora)).toBe(false);
+  test("cliente novo há 2 dias também conta como parado", () => {
+    expect(leadParado(cliente("novo", 2), 2, agora)).toBe(true);
   });
-  test("lead novo nunca conta como parado", () => {
-    expect(leadParado({ etapa: "novo", ultimo_contato_em: haDias(10) }, 2, agora)).toBe(false);
+  test("cliente em contato há 1 dia não está parado", () => {
+    expect(leadParado(cliente("em_contato", 1), 2, agora)).toBe(false);
   });
-  test("lead vendido nunca conta como parado", () => {
-    expect(leadParado({ etapa: "vendido", ultimo_contato_em: haDias(10) }, 2, agora)).toBe(false);
+  test("parceiro usa 15 dias, não o prazo da loja", () => {
+    expect(leadParado(parceiro("em_contato", 14), 2, agora)).toBe(false);
+    expect(leadParado(parceiro("em_contato", DIAS_PARCEIRO_PARADO), 2, agora)).toBe(true);
+  });
+  test("vendido ou perdido nunca conta como parado", () => {
+    for (const etapa of ["vendido", "perdido"] as const) {
+      expect(leadParado(cliente(etapa, 30), 2, agora)).toBe(false);
+      expect(leadParado(parceiro(etapa, 30), 2, agora)).toBe(false);
+    }
   });
 });
 
