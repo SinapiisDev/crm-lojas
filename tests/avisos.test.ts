@@ -85,6 +85,54 @@ describe("rotina diária", () => {
     await rotina();
     expect((await avisosDe(vend)).length).toBe(antes);
   });
+
+  // Cada teste abaixo usa uma vendedora própria: a cota de 5 avisos é por pessoa.
+  const parado = (vendedor: string, nome: string, dias: number, extra: Record<string, unknown> = {}) =>
+    admin.from("leads").insert({
+      loja_id: loja, vendedor_id: vendedor, nome, etapa: "negociacao",
+      ultimo_contato_em: new Date(Date.now() - dias * 86_400_000).toISOString(), ...extra,
+    }).select("id").single();
+  const parados = async (u: Usuario) => (await avisosDe(u)).filter((a) => a.titulo.startsWith("Lead parado: "));
+
+  test("no máximo 5 avisos de parado por pessoa e um resumo do resto", async () => {
+    const v = await criarUsuario("cota", "vendedor");
+    for (let i = 0; i < 7; i++) await parado(v.id, `Cota ${i} ${sufixo}`, 3);
+    await rotina();
+    expect(await parados(v)).toHaveLength(5);
+    const resto = (await avisosDe(v)).find((a) => a.titulo === "E mais 2 leads parados");
+    expect(resto?.link).toBe("/leads");
+  });
+
+  test("parceiro só conta como parado depois de 15 dias", async () => {
+    const v = await criarUsuario("parceiro", "vendedor");
+    await parado(v.id, `Arq 10 ${sufixo}`, 10, { tipo: "parceiro", etapa: "em_contato" });
+    await rotina();
+    expect(await parados(v)).toHaveLength(0);
+    await parado(v.id, `Arq 16 ${sufixo}`, 16, { tipo: "parceiro", etapa: "em_contato" });
+    await rotina();
+    expect((await parados(v)).map((a) => a.titulo)).toEqual([`Lead parado: Arq 16 ${sufixo}`]);
+  });
+
+  test("aviso traz telefone, sugestão e link do WhatsApp", async () => {
+    const v = await criarUsuario("tel", "vendedor");
+    const { data } = await parado(v.id, `Ana ${sufixo}`, 3, { telefone: "42999143583", sugestao_ia: "Oi Ana, tudo bem?" });
+    await rotina();
+    const [aviso] = await parados(v);
+    expect(aviso.texto).toBe('Sem contato há 3 dias. Tel. (42) 99914-3583. Sugestão: "Oi Ana, tudo bem?"');
+    expect(aviso.link).toBe(`/leads/${data!.id}/whatsapp`);
+  });
+
+  test("cliente novo ou em contato parado também avisa; cliente vem antes de parceiro", async () => {
+    const v = await criarUsuario("ordem", "vendedor");
+    for (let i = 0; i < 5; i++) await parado(v.id, `Parc ${i} ${sufixo}`, 30, { tipo: "parceiro" });
+    await parado(v.id, `Novo ${sufixo}`, 3, { etapa: "novo" });
+    await parado(v.id, `Contato ${sufixo}`, 3, { etapa: "em_contato" });
+    await rotina();
+    const titulos = (await parados(v)).map((a) => a.titulo);
+    expect(titulos).toContain(`Lead parado: Novo ${sufixo}`);
+    expect(titulos).toContain(`Lead parado: Contato ${sufixo}`);
+    expect(titulos.filter((t) => t.includes("Parc "))).toHaveLength(3);
+  });
 });
 
 describe("caixa de saída", () => {
