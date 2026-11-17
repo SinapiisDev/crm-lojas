@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { promptLead, type DadosLead } from "./leads";
+import { SISTEMA_LEAD, promptLead, type DadosLead } from "./leads";
 
 const base: DadosLead = {
   nome: "Paulo Henrique",
@@ -8,6 +8,7 @@ const base: DadosLead = {
   valor_estimado: 15000,
   ultimo_contato_em: "2026-11-08T15:00:00Z",
   vendedora: "Ana Souza",
+  tipo: "cliente",
   eventos: [],
 };
 
@@ -27,6 +28,12 @@ describe("promptLead", () => {
     expect(p).toContain("WhatsApp (mais antiga primeiro):");
     expect(p.indexOf("Cliente: Tem o sofá cinza?")).toBeLessThan(p.indexOf("Loja: Consigo em 10x"));
     expect(p).toContain("Cliente: [mídia]");
+  });
+
+  test("diz se é cliente ou parceiro, e o sistema orienta a sugestão de parceiro", () => {
+    expect(promptLead(base)).toContain("Tipo: Cliente");
+    expect(promptLead({ ...base, tipo: "parceiro" })).toContain("Tipo: Parceiro");
+    expect(SISTEMA_LEAD).toMatch(/parceiro/i);
   });
 
   test("sem mensagens não cria a seção", () => {

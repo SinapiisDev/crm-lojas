@@ -52,13 +52,17 @@ export function diasSemContato(ultimo: string, agora = new Date()): number {
   return Math.floor((agora.getTime() - new Date(ultimo).getTime()) / DIA_MS);
 }
 
+// Parceiro (arquiteto, construtora...) responde num ritmo mais lento: prazo fixo maior que o da loja.
+export const DIAS_PARCEIRO_PARADO = 15;
+
+// Qualquer etapa aberta sem contato há tempo demais. Mesma regra em SQL na rotina_diaria (migração alerta_parados).
 export function leadParado(
-  lead: { etapa: Etapa; ultimo_contato_em: string },
+  lead: { etapa: Etapa; ultimo_contato_em: string; tipo: TipoLead },
   diasLimite: number,
   agora = new Date(),
 ): boolean {
-  if (lead.etapa !== "orcamento_enviado" && lead.etapa !== "negociacao") return false;
-  return diasSemContato(lead.ultimo_contato_em, agora) >= diasLimite;
+  if (lead.etapa === "vendido" || lead.etapa === "perdido") return false;
+  return diasSemContato(lead.ultimo_contato_em, agora) >= (lead.tipo === "parceiro" ? DIAS_PARCEIRO_PARADO : diasLimite);
 }
 
 export function linkWhatsApp(telefone: string, texto?: string): string | null {

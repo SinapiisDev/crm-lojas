@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { formatarMoeda } from "@/lib/formatar";
-import { leadParado, type Etapa } from "@/lib/regras/leads";
+import { leadParado, type Etapa, type TipoLead } from "@/lib/regras/leads";
 import {
   periodo,
   resumoPorLoja,
@@ -37,7 +37,7 @@ type LeadSemana = LeadPainel & { nome: string; valor_estimado: number | null };
 export function promptSemana(loja: string, p: ReturnType<typeof periodo>, leads: LeadSemana[], tarefas: TarefaPainel[], diasParado: number, hoje: string) {
   const [linha] = resumoPorLoja([{ id: "l", nome: loja, dias_lead_parado: diasParado }], leads.map((l) => ({ ...l, loja_id: "l" })), p);
   const parados = leads
-    .filter((l) => leadParado(l, diasParado))
+    .filter((l) => leadParado({ ...l, tipo: "cliente" }, diasParado))
     .sort((a, b) => Number(b.valor_estimado ?? 0) - Number(a.valor_estimado ?? 0))
     .slice(0, 5);
   return [
@@ -83,7 +83,8 @@ export async function gerarResumosSemanais(hoje: string, modelo?: ModeloIA, { pr
         .from("leads")
         .select("loja_id, nome, etapa, valor_estimado, valor_vendido, criado_em, fechado_em, ultimo_contato_em, perfis!leads_vendedor_id_fkey(nome)")
         .eq("loja_id", loja.id)
-        .or(`criado_em.gte.${p.inicioAnterior},fechado_em.gte.${p.inicio},etapa.in.(orcamento_enviado,negociacao)`)
+        .eq("tipo", "cliente") // igual ao painel: parceiros não são vendas
+        .or(`criado_em.gte.${p.inicioAnterior},fechado_em.gte.${p.inicio},etapa.in.(novo,em_contato,orcamento_enviado,negociacao)`)
         .limit(1000),
       admin
         .from("tarefas")
@@ -143,8 +144,8 @@ export async function rotinaIA(
     admin.from("lojas").select("id, dias_lead_parado"),
     admin
       .from("leads")
-      .select("id, loja_id, etapa, ultimo_contato_em, ia_em")
-      .in("etapa", ["orcamento_enviado", "negociacao"])
+      .select("id, loja_id, etapa, tipo, ultimo_contato_em, ia_em")
+      .in("etapa", ["novo", "em_contato", "orcamento_enviado", "negociacao"])
       .lte("ultimo_contato_em", new Date(Date.now() - 86_400_000).toISOString())
       .order("ultimo_contato_em", { ascending: true })
       .limit(1000),
@@ -152,7 +153,7 @@ export async function rotinaIA(
   const limite = new Map((lojas ?? []).map((l) => [l.id, l.dias_lead_parado]));
   const tresDias = Date.now() - 3 * 86_400_000;
   const fila = (candidatos ?? [])
-    .filter((l) => leadParado({ etapa: l.etapa as Etapa, ultimo_contato_em: l.ultimo_contato_em }, limite.get(l.loja_id) ?? 2))
+    .filter((l) => leadParado({ etapa: l.etapa as Etapa, ultimo_contato_em: l.ultimo_contato_em, tipo: l.tipo as TipoLead }, limite.get(l.loja_id) ?? 2))
     .filter((l) => !l.ia_em || l.ia_em < l.ultimo_contato_em || Date.parse(l.ia_em) < tresDias)
     .slice(0, MAX_LEADS_POR_ROTINA);
 

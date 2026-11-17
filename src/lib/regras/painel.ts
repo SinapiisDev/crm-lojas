@@ -69,7 +69,7 @@ function linha(id: string, nome: string, leads: LeadPainel[], p: Periodo, parado
 export function resumoPorLoja(lojas: LojaPainel[], leads: LeadPainel[], p: Periodo, agora = new Date()): LinhaLoja[] {
   const linhas = lojas.map((loja) => {
     const daLoja = leads.filter((l) => l.loja_id === loja.id);
-    const parados = daLoja.filter((l) => leadParado(l, loja.dias_lead_parado, agora)).length;
+    const parados = daLoja.filter((l) => leadParado({ ...l, tipo: "cliente" }, loja.dias_lead_parado, agora)).length; // o painel só busca clientes
     return linha(loja.id, loja.nome, daLoja, p, parados);
   });
   const total = linha("total", "Total", leads.filter((l) => lojas.some((j) => j.id === l.loja_id)), p,
