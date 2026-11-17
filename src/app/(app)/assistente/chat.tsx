@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Suspense, useState, useTransition } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatarMoeda } from "@/lib/formatar";
 import type { EstadoConversa } from "@/lib/ia/conversa";
 import { ETAPAS, ORIGENS } from "@/lib/regras/leads";
-import { conversar, criarPropostas, tirarProposta } from "./actions";
+import { conversar, criarPropostas, novaConversa, tirarProposta } from "./actions";
+import { SugestoesDoDia, type SugestaoLoja } from "./sugestoes";
 
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const plural = (n: number, um: string, varios: string) => (n === 1 ? `1 ${um}` : `${n} ${varios}`);
 
-export function ChatAssistente({ primeiroNome, inicial }: { primeiroNome: string; inicial: EstadoConversa }) {
+export function ChatAssistente({
+  primeiroNome,
+  inicial,
+  sugestoes,
+}: {
+  primeiroNome: string;
+  inicial: EstadoConversa;
+  sugestoes: Promise<SugestaoLoja[]>;
+}) {
   // Estado vem do servidor (conversa salva); cada ação devolve o estado novo.
   const [estado, setEstado] = useState(inicial);
   const { mensagens: conversa, tarefas: propostas, leads, memorias } = estado;
@@ -65,13 +74,28 @@ export function ChatAssistente({ primeiroNome, inicial }: { primeiroNome: string
     });
   }
 
+  function recomecar() {
+    setErro("");
+    setFeito("");
+    iniciar(async () => setEstado(await novaConversa()));
+  }
+
   return (
     <div className="flex flex-col gap-4">
+      <Suspense fallback={<p className="text-sm text-muted-foreground">Preparando as sugestões de hoje...</p>}>
+        <SugestoesDoDia promessa={sugestoes} fazer={(pedido) => enviar(pedido)} ocupado={pensando} />
+      </Suspense>
       <section aria-label="Conversa" className="flex flex-col gap-3 rounded-3xl bg-card p-5 shadow-card">
+        {conversa.length > 0 && (
+          <button type="button" onClick={recomecar} disabled={pensando} className="self-end text-xs text-muted-foreground underline">
+            Nova conversa
+          </button>
+        )}
         {!conversa.length && (
           <p className="text-sm text-muted-foreground">
-            Oi, {primeiroNome}! Ex.: “Ana liga para o Paulo até sexta e o Bruno arruma a vitrine amanhã” ou “Chegou a Maria pelo
-            Instagram, 42 99999-0000, quer um sofá de uns 3 mil, a Ana atende”.
+            Oi, {primeiroNome}! Peça tarefas (“Ana liga para o Paulo até sexta”), conte de um cliente novo (“Chegou a Maria pelo
+            Instagram, 42 99999-0000, quer um sofá de uns 3 mil, a Ana atende”) ou pergunte sobre a loja (“quem está mais devagar
+            essa semana?”).
           </p>
         )}
         {conversa.map((m, i) => (
@@ -123,7 +147,7 @@ export function ChatAssistente({ primeiroNome, inicial }: { primeiroNome: string
             }}
             rows={2}
             maxLength={2000}
-            placeholder="Tarefa para a equipe ou cliente novo?"
+            placeholder="Tarefa, cliente novo ou pergunta sobre a loja?"
           />
           <Button type="submit" disabled={pensando || !texto.trim()}>
             Enviar

@@ -110,3 +110,17 @@ test("assistente: só gerência vê; com IA desligada avisa", async ({ page, bro
   const r = await vendedora.goto("/assistente");
   expect(r?.status()).toBe(404);
 });
+
+test("gerência vê e apaga a memória da loja", async ({ page }) => {
+  const loja = await lojaNova("Memoria");
+  const g = await criarUsuario(`Ger ${sufixo()}`, [[loja.id, "gerente"]]);
+  const texto = `Cobrança de parceiro às terças ${sufixo()}`;
+  await admin.from("memorias_ia").insert({ loja_id: loja.id, texto, criado_por: g.id });
+  await entrar(page, g.email, undefined, "/assistente");
+  const secao = page.getByRole("region", { name: "Memória da loja" });
+  await expect(secao.getByText(texto)).toBeVisible();
+  await secao.getByRole("button", { name: `Apagar ${texto}` }).click();
+  await expect(secao.getByText(texto)).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Memória da loja" }).getByText(texto)).toHaveCount(0);
+});
