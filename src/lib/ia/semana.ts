@@ -15,7 +15,7 @@ import { diasEntre } from "@/lib/regras/tarefas";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
 import { atualizarLeadIA } from "./leads";
 import { tempoMaximo } from "@/lib/avisos/despachar";
-import { iaLigada, modeloAnthropic, type ModeloIA } from "./modelo";
+import { criarModelo, iaLigada, type ModeloIA } from "./modelo";
 
 export const FormatoSemana = z.object({ texto: z.string() });
 
@@ -64,7 +64,7 @@ export function promptSemana(loja: string, p: ReturnType<typeof periodo>, leads:
 export async function gerarResumosSemanais(hoje: string, modelo?: ModeloIA, { prazo = Date.now() + tempoMaximo() } = {}): Promise<number> {
   if (!modelo) {
     if (!iaLigada()) return 0;
-    modelo = modeloAnthropic();
+    modelo = criarModelo();
   }
   const admin = criarClienteAdmin();
   const p = periodo(7, somarDias(hoje, -1));
@@ -136,7 +136,7 @@ export async function rotinaIA(
 ): Promise<{ leads: number; resumos: number }> {
   if (!modelo) {
     if (!iaLigada()) return { leads: 0, resumos: 0 };
-    modelo = modeloAnthropic();
+    modelo = criarModelo();
   }
   const admin = criarClienteAdmin();
   const [{ data: lojas }, { data: candidatos }] = await Promise.all([

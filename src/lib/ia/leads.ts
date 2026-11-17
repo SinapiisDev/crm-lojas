@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { ETAPAS, ORIGENS, diasSemContato } from "@/lib/regras/leads";
 import { criarClienteAdmin } from "@/lib/supabase/admin";
-import { iaLigada, modeloAnthropic, type ModeloIA } from "./modelo";
+import { criarModelo, iaLigada, type ModeloIA } from "./modelo";
 
 export const FormatoLead = z.object({
   temperatura: z.enum(["quente", "morno", "frio"]),
@@ -65,7 +65,7 @@ export function promptLead(d: DadosLead, agora = new Date()): string {
 export async function atualizarLeadIA(leadId: string, modelo?: ModeloIA): Promise<boolean> {
   if (!modelo) {
     if (!iaLigada()) return false;
-    modelo = modeloAnthropic();
+    modelo = criarModelo();
   }
   const admin = criarClienteAdmin();
   const [{ data: lead }, { data: eventos }, { data: mensagens }] = await Promise.all([

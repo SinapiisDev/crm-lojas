@@ -19,7 +19,7 @@ export default async function PaginaAssistente() {
         <ChatAssistente primeiroNome={usuario.nome.split(" ")[0]} />
       ) : (
         <p className="rounded-3xl bg-card p-5 text-sm text-muted-foreground shadow-card">
-          A IA está desligada. Para ligar, configure <code>ANTHROPIC_API_KEY</code> e <code>AI_MODEL</code> no servidor.
+          A IA está desligada. Para ligar, configure <code>OPENAI_API_KEY</code> (ou <code>ANTHROPIC_API_KEY</code>) e <code>AI_MODEL</code> no servidor.
         </p>
       )}
     </div>
