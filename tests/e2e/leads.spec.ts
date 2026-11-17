@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { linkWhatsApp } from "../../src/lib/regras/leads";
 import { admin, criarUsuario, entrar, lojas, sufixo } from "./ajuda";
 
 const coluna = (page: Page, titulo: string) => page.getByRole("region", { name: titulo });
@@ -202,4 +203,39 @@ test("abas Clientes/Parceiros, busca sem acento e visão em lista", async ({ pag
   // Lead novo criado na aba Parceiros já nasce parceiro.
   await page.getByRole("button", { name: "Novo lead" }).click();
   await expect(page.getByLabel("Tipo", { exact: true })).toHaveValue("parceiro");
+});
+
+test.describe("abrir WhatsApp pelo aviso", () => {
+  const abrir = (page: Page, id: string) => page.request.get(`/leads/${id}/whatsapp`, { maxRedirects: 0 });
+
+  test("redireciona para o WhatsApp com a sugestão da IA", async ({ page }) => {
+    const { loja1 } = await lojas();
+    const dona = await criarUsuario("Dona", [[loja1, "dono"]]);
+    const sugestao = 'Oi "Ana", tudo bem? 😊';
+    const lead = await leadNoBanco(loja1, dona.id, { telefone: "42999143583" });
+    await admin.from("leads").update({ sugestao_ia: sugestao }).eq("id", lead.id);
+    await entrar(page, dona.email);
+    const r = await abrir(page, lead.id);
+    expect(r.status()).toBe(307);
+    expect(r.headers()["location"]).toBe(linkWhatsApp("42999143583", sugestao));
+  });
+
+  test("telefone inválido cai na página do lead", async ({ page }) => {
+    const { loja1 } = await lojas();
+    const dona = await criarUsuario("Dona", [[loja1, "dono"]]);
+    const lead = await leadNoBanco(loja1, dona.id, { telefone: "123" });
+    await entrar(page, dona.email);
+    expect((await abrir(page, lead.id)).headers()["location"]).toMatch(new RegExp(`/leads/${lead.id}$`));
+  });
+
+  test("vendedora não abre o WhatsApp de lead da colega", async ({ page }) => {
+    const { loja1 } = await lojas();
+    const a = await criarUsuario("VendA", [[loja1, "vendedor"]]);
+    const b = await criarUsuario("VendB", [[loja1, "vendedor"]]);
+    const lead = await leadNoBanco(loja1, b.id, { telefone: "42999143583" });
+    await entrar(page, a.email);
+    const destino = (await abrir(page, lead.id)).headers()["location"];
+    expect(destino).toMatch(/\/leads$/);
+    expect(destino).not.toContain("999143583");
+  });
 });
