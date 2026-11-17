@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { iaLigada, modeloAnthropic, type ModeloIA } from "./modelo";
+import { criarModelo, iaLigada, type ModeloIA } from "./modelo";
 import { ORIGENS } from "@/lib/regras/leads";
 
 // Assistente da gerência: entende pedidos em texto livre e propõe tarefas e leads. Nada é gravado aqui:
@@ -119,7 +119,7 @@ export function validarLeads(leads: LeadIA[], equipe: Pessoa[]): PropostaLead[] 
 export async function responderAssistente(dados: DadosAssistente, modelo?: ModeloIA): Promise<RespostaAssistente | null> {
   if (!modelo) {
     if (!iaLigada()) return null;
-    modelo = modeloAnthropic();
+    modelo = criarModelo();
   }
   // A lista inteira volta a cada mensagem: precisa de mais espaço que o padrão.
   const r = await modelo({ sistema: SISTEMA_ASSISTENTE, conteudo: promptAssistente(dados), formato: FormatoAssistente, maxTokens: 8000 });

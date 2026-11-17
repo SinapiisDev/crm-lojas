@@ -191,6 +191,21 @@ describe("núcleo da IA", () => {
     }
   });
 
+  test("com chave da OpenAI liga com qualquer modelo, mas não sem modelo", async () => {
+    const { iaLigada } = await import("@/lib/ia/modelo");
+    const antes = { m: process.env.AI_MODEL, k: process.env.OPENAI_API_KEY };
+    process.env.OPENAI_API_KEY = "sk-teste";
+    try {
+      process.env.AI_MODEL = "  ";
+      expect(iaLigada()).toBe(false);
+      process.env.AI_MODEL = "modelo-qualquer";
+      expect(iaLigada()).toBe(true);
+    } finally {
+      if (antes.m === undefined) delete process.env.AI_MODEL; else process.env.AI_MODEL = antes.m;
+      if (antes.k === undefined) delete process.env.OPENAI_API_KEY; else process.env.OPENAI_API_KEY = antes.k;
+    }
+  });
+
   test("rotina para depois de 3 falhas seguidas da IA (I3)", async () => {
     await admin.from("leads").insert(
       Array.from({ length: 6 }, (_, i) => ({ loja_id: loja, vendedor_id: vend.id, nome: `falha-${i}-${sufixo}`, etapa: "negociacao", ultimo_contato_em: tresDiasAtras() })),
