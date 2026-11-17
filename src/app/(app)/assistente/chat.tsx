@@ -6,56 +6,62 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { formatarMoeda } from "@/lib/formatar";
-import type { Mensagem, Proposta, PropostaLead } from "@/lib/ia/assistente";
+import type { EstadoConversa } from "@/lib/ia/conversa";
 import { ETAPAS, ORIGENS } from "@/lib/regras/leads";
-import { conversar, criarPropostas } from "./actions";
+import { conversar, criarPropostas, tirarProposta } from "./actions";
 
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const plural = (n: number, um: string, varios: string) => (n === 1 ? `1 ${um}` : `${n} ${varios}`);
 
-export function ChatAssistente({ primeiroNome }: { primeiroNome: string }) {
-  const [conversa, setConversa] = useState<Mensagem[]>([]);
-  const [propostas, setPropostas] = useState<Proposta[]>([]);
+export function ChatAssistente({ primeiroNome, inicial }: { primeiroNome: string; inicial: EstadoConversa }) {
+  // Estado vem do servidor (conversa salva); cada ação devolve o estado novo.
+  const [estado, setEstado] = useState(inicial);
+  const { mensagens: conversa, tarefas: propostas, leads, memorias } = estado;
   const [texto, setTexto] = useState("");
   const [erro, setErro] = useState("");
-  const [leads, setLeads] = useState<PropostaLead[]>([]);
   const [feito, setFeito] = useState("");
   const [pensando, iniciar] = useTransition();
 
-  function enviar() {
-    const pedido = texto.trim();
+  function enviar(pedido = texto.trim()) {
     if (!pedido || pensando) return;
-    const nova = [...conversa, { autor: "voce" as const, texto: pedido }];
-    setConversa(nova);
+    setEstado((e) => ({ ...e, mensagens: [...e.mensagens, { autor: "voce", texto: pedido }] }));
     setTexto("");
     setErro("");
     setFeito("");
     iniciar(async () => {
-      const r = await conversar(nova, propostas, leads);
+      const r = await conversar(pedido);
       if ("erro" in r) {
         setErro(r.erro);
         return;
       }
-      setConversa([...nova, { autor: "ia", texto: r.resposta }]);
-      setPropostas(r.tarefas);
-      setLeads(r.leads);
+      setEstado(r);
+    });
+  }
+
+  function tirar(tipo: "tarefa" | "lead" | "memoria", indice: number) {
+    iniciar(async () => {
+      const r = await tirarProposta(tipo, indice);
+      if ("erro" in r) setErro(r.erro);
+      else setEstado(r);
     });
   }
 
   function confirmar() {
     setErro("");
     iniciar(async () => {
-      const r = await criarPropostas(propostas, leads);
+      const r = await criarPropostas();
       if ("erro" in r) {
         setErro(r.erro);
         return;
       }
-      const partes = [r.criadas && plural(r.criadas, "tarefa criada", "tarefas criadas"), r.leads && plural(r.leads, "lead criado", "leads criados")];
-      setFeito(partes.filter(Boolean).join(" e ") + ".");
-      if (r.falhas) setErro(`${plural(r.falhas, "lead não pôde", "leads não puderam")} ser salvo(s).`);
-      setPropostas([]);
-      setLeads([]);
-      setConversa([]);
+      const partes = [
+        r.criadas && plural(r.criadas, "tarefa criada", "tarefas criadas"),
+        r.leads && plural(r.leads, "lead criado", "leads criados"),
+        r.memorias && plural(r.memorias, "memória guardada", "memórias guardadas"),
+      ];
+      setFeito(partes.filter(Boolean).join(", ") + ".");
+      if (r.falhas.length) setErro(r.falhas.join(" "));
+      setEstado(r.estado);
     });
   }
 
@@ -145,7 +151,7 @@ export function ChatAssistente({ primeiroNome }: { primeiroNome: string }) {
                 <button
                   type="button"
                   aria-label={`Tirar ${l.nome}`}
-                  onClick={() => setLeads(leads.filter((_, j) => j !== i))}
+                  onClick={() => tirar("lead", i)}
                   className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                   <X className="size-4" />
@@ -172,7 +178,7 @@ export function ChatAssistente({ primeiroNome }: { primeiroNome: string }) {
                 <button
                   type="button"
                   aria-label={`Tirar ${t.titulo}`}
-                  onClick={() => setPropostas(propostas.filter((_, j) => j !== i))}
+                  onClick={() => tirar("tarefa", i)}
                   className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                   <X className="size-4" />
@@ -183,9 +189,40 @@ export function ChatAssistente({ primeiroNome }: { primeiroNome: string }) {
         </section>
       )}
 
-      {(propostas.length > 0 || leads.length > 0) && (
+      {memorias.length > 0 && (
+        <section aria-label="Memórias propostas" className="flex flex-col gap-3 rounded-3xl bg-card p-5 shadow-card">
+          <h2 className="text-base font-semibold tracking-tight">Lembrar daqui pra frente</h2>
+          <ul className="flex flex-col gap-2">
+            {memorias.map((m, i) => (
+              <li key={i} className="flex items-start justify-between gap-3 rounded-2xl bg-muted/60 p-3 text-sm">
+                <div>
+                  <p className="font-medium">Lembrar: {m.texto}</p>
+                  <p className="text-xs text-muted-foreground">{m.loja}</p>
+                </div>
+                <button
+                  type="button"
+                  aria-label={`Tirar ${m.texto}`}
+                  onClick={() => tirar("memoria", i)}
+                  className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {(propostas.length > 0 || leads.length > 0 || memorias.length > 0) && (
         <Button onClick={confirmar} disabled={pensando} className="self-end">
-          Criar {[propostas.length && plural(propostas.length, "tarefa", "tarefas"), leads.length && plural(leads.length, "lead", "leads")].filter(Boolean).join(" e ")}
+          Criar{" "}
+          {[
+            propostas.length && plural(propostas.length, "tarefa", "tarefas"),
+            leads.length && plural(leads.length, "lead", "leads"),
+            memorias.length && plural(memorias.length, "memória", "memórias"),
+          ]
+            .filter(Boolean)
+            .join(" e ")}
         </Button>
       )}
     </div>

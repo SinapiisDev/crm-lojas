@@ -1,11 +1,15 @@
 import { notFound } from "next/navigation";
+import { lerConversa } from "@/lib/ia/conversa";
 import { iaLigada } from "@/lib/ia/modelo";
+import { hojeSP } from "@/lib/regras/tarefas";
 import { obterSessao, podeGerir } from "@/lib/sessao";
+import { equipeDoAssistente } from "./actions";
 import { ChatAssistente } from "./chat";
 
 export default async function PaginaAssistente() {
-  const { usuario, lojas } = await obterSessao();
+  const { supabase, usuario, lojas } = await obterSessao();
   if (!lojas.some((l) => podeGerir(l.cargo))) notFound();
+  const conversa = await lerConversa(supabase, usuario.id, await equipeDoAssistente(), hojeSP());
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
@@ -16,7 +20,7 @@ export default async function PaginaAssistente() {
         </p>
       </div>
       {iaLigada() ? (
-        <ChatAssistente primeiroNome={usuario.nome.split(" ")[0]} />
+        <ChatAssistente primeiroNome={usuario.nome.split(" ")[0]} inicial={conversa} />
       ) : (
         <p className="rounded-3xl bg-card p-5 text-sm text-muted-foreground shadow-card">
           A IA está desligada. Para ligar, configure <code>OPENAI_API_KEY</code> (ou <code>ANTHROPIC_API_KEY</code>) e <code>AI_MODEL</code> no servidor.
