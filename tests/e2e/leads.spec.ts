@@ -252,3 +252,26 @@ test.describe("abrir WhatsApp pelo aviso", () => {
     expect(destino).not.toContain("999143583");
   });
 });
+
+test("\"Já mandei\" no aviso registra o contato e tira o lead dos parados", async ({ page }) => {
+  const { loja1 } = await lojas();
+  const dona = await criarUsuario("Dona", [[loja1, "dono"]]);
+  const tresDias = new Date(Date.now() - 3 * 86_400_000).toISOString();
+  const lead = await leadNoBanco(loja1, dona.id, { telefone: "42999143583", etapa: "negociacao", ultimo_contato_em: tresDias });
+  await admin.from("notificacoes").insert({
+    usuario_id: dona.id, loja_id: loja1, titulo: `Lead parado: ${lead.nome}`, texto: "Sem contato há 3 dias.", link: `/leads/${lead.id}/whatsapp`,
+  });
+  await entrar(page, dona.email, undefined, "/avisos");
+  const item = page.getByRole("listitem").filter({ hasText: lead.nome });
+  await item.getByRole("button", { name: "Já mandei" }).click();
+  await expect(item.getByText("Contato registrado")).toBeVisible();
+
+  const { data } = await admin.from("leads").select("ultimo_contato_em").eq("id", lead.id).single();
+  expect(Date.parse(data!.ultimo_contato_em)).toBeGreaterThan(Date.parse(tresDias) + 86_400_000);
+  const { data: eventos } = await admin.from("lead_eventos").select("tipo").eq("lead_id", lead.id).eq("tipo", "whatsapp");
+  expect(eventos).toHaveLength(1);
+
+  // Voltando à lista, o aviso já aparece como resolvido.
+  await page.reload();
+  await expect(page.getByRole("listitem").filter({ hasText: lead.nome }).getByText("Contato registrado")).toBeVisible();
+});
