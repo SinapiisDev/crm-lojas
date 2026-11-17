@@ -5,7 +5,7 @@ import { after } from "next/server";
 import { despacharAvisos } from "@/lib/avisos/despachar";
 import { atualizarLeadIA } from "@/lib/ia/leads";
 import type { Pessoa } from "@/lib/ia/assistente";
-import { criarMemorias, enviarMensagem, gravarConversa, lerConversa, removerProposta, type EstadoConversa } from "@/lib/ia/conversa";
+import { criarMemorias, devolverPropostas, enviarMensagem, removerProposta, reservarPropostas, type EstadoConversa, type TipoProposta } from "@/lib/ia/conversa";
 import { carregarRetrato, montarRetrato } from "@/lib/ia/retrato";
 import { hojeSP } from "@/lib/regras/tarefas";
 import { obterSessao, podeGerir } from "@/lib/sessao";
@@ -47,13 +47,13 @@ export async function conversar(texto: string): Promise<EstadoConversa | { erro:
   return enviarMensagem(c.supabase, c.usuario.id, String(texto ?? ""), { equipe: c.pessoas, hoje: c.hoje, retrato });
 }
 
-const TIPOS_PROPOSTA = ["tarefa", "lead", "memoria"] as const;
+const TIPOS_PROPOSTA: TipoProposta[] = ["tarefa", "lead", "memoria"];
 
-export async function tirarProposta(tipo: (typeof TIPOS_PROPOSTA)[number], indice: number): Promise<EstadoConversa | { erro: string }> {
-  if (!TIPOS_PROPOSTA.includes(tipo) || !Number.isInteger(indice)) return { erro: "Proposta inválida." };
+export async function tirarProposta(tipo: TipoProposta, chave: string): Promise<EstadoConversa | { erro: string }> {
+  if (!TIPOS_PROPOSTA.includes(tipo) || typeof chave !== "string" || chave.length > 3000) return { erro: "Proposta inválida." };
   const c = await contexto();
   if (!c.pessoas.length) return { erro: SO_GERENCIA };
-  return removerProposta(c.supabase, c.usuario.id, tipo, indice, { equipe: c.pessoas, hoje: c.hoje });
+  return removerProposta(c.supabase, c.usuario.id, tipo, chave, { equipe: c.pessoas, hoje: c.hoje });
 }
 
 export async function novaConversa(): Promise<EstadoConversa> {
@@ -78,19 +78,21 @@ export async function criarPropostas(): Promise<ResultadoCriacao | { erro: strin
   const c = await contexto();
   if (!c.pessoas.length) return { erro: SO_GERENCIA };
   const { supabase, usuario } = c;
-  const estado = await lerConversa(supabase, usuario.id, c.pessoas, c.hoje);
-  const { tarefas: validas, leads } = estado;
-  if (!validas.length && !leads.length && !estado.memorias.length) return { erro: "Nada válido para criar." };
+  const ctx = { equipe: c.pessoas, hoje: c.hoje };
+  // Tira as propostas da conversa antes de criar: clique repetido ou outro aparelho não duplicam nada.
+  const { tarefas: validas, leads, memorias } = await reservarPropostas(supabase, usuario.id, ctx);
+  if (!validas.length && !leads.length && !memorias.length) return { erro: "Nada válido para criar." };
   const falhas: string[] = [];
   // Gravação com a sessão de quem confirmou: as regras do banco (RLS) valem como no formulário.
-  let tarefasCriadas = 0;
+  let tarefasFalharam: typeof validas = [];
   if (validas.length) {
     const { error } = await supabase.from("tarefas").insert(
       validas.map((t) => ({ loja_id: t.loja_id, responsavel_id: t.responsavel_id, titulo: t.titulo, descricao: t.descricao || null, prazo: t.prazo })),
     );
-    if (error) falhas.push("Não foi possível criar as tarefas.");
-    else {
-      tarefasCriadas = validas.length;
+    if (error) {
+      tarefasFalharam = validas;
+      falhas.push("Não foi possível criar as tarefas.");
+    } else {
       revalidatePath("/tarefas");
       revalidatePath("/painel");
       after(() => despacharAvisos().catch((e) => console.error("despacho após assistente falhou", e)));
@@ -127,13 +129,11 @@ export async function criarPropostas(): Promise<ResultadoCriacao | { erro: strin
     revalidatePath("/leads");
     revalidatePath("/painel");
   }
-  const mem = await criarMemorias(supabase, usuario.id, estado.memorias);
+  const mem = await criarMemorias(supabase, usuario.id, memorias);
   falhas.push(...mem.falhas);
-  const memoriasFalharam = estado.memorias.filter((m) => mem.falhas.some((f) => f.startsWith(`"${m.texto}"`)));
   if (mem.criadas) revalidatePath("/assistente");
 
-  // A conversa continua; só saem as propostas criadas.
-  const novo: EstadoConversa = { ...estado, tarefas: tarefasCriadas ? [] : validas, leads: leadsFalharam, memorias: memoriasFalharam };
-  await gravarConversa(supabase, usuario.id, novo);
-  return { criadas: tarefasCriadas, leads: leads.length - leadsFalharam.length, memorias: mem.criadas, falhas, estado: novo };
+  // A conversa continua; o que falhou volta como proposta para tentar de novo.
+  const estado = await devolverPropostas(supabase, usuario.id, { tarefas: tarefasFalharam, leads: leadsFalharam, memorias: mem.falharam }, ctx);
+  return { criadas: validas.length - tarefasFalharam.length, leads: leads.length - leadsFalharam.length, memorias: mem.criadas, falhas, estado };
 }

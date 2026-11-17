@@ -35,6 +35,8 @@ create table conversas_ia (
   tarefas jsonb not null default '[]',
   leads jsonb not null default '[]',
   memorias jsonb not null default '[]',
+  -- Gravação condicional (só grava se ninguém mudou desde a leitura): dois aparelhos não desfazem um ao outro.
+  versao int not null default 0,
   atualizado_em timestamptz not null default now()
 );
 alter table conversas_ia enable row level security;

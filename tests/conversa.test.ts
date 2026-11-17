@@ -2,7 +2,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { beforeAll, describe, expect, test } from "vitest";
 import type { Pessoa } from "@/lib/ia/assistente";
-import { criarMemorias, enviarMensagem, gravarConversa, lerConversa, removerProposta } from "@/lib/ia/conversa";
+import { chaveProposta, criarMemorias, devolverPropostas, enviarMensagem, gravarConversa, lerConversa, removerProposta, reservarPropostas } from "@/lib/ia/conversa";
+import { carregarRetrato } from "@/lib/ia/retrato";
 import type { ModeloIA, PedidoIA } from "@/lib/ia/modelo";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -39,6 +40,9 @@ function modeloFalso(resposta: unknown) {
   return { modelo, pedidos };
 }
 const vazia = { resposta: "Certo.", tarefas: [], leads: [], memorias: [] };
+const novaLinha = async (c: SupabaseClient) => {
+  await c.from("conversas_ia").delete().eq("usuario_id", gerenteId);
+};
 const ctx = () => ({ equipe, hoje: HOJE, retrato: "## Loja: Teste" });
 
 beforeAll(async () => {
@@ -84,7 +88,8 @@ describe("conversa salva", () => {
     const tarefa = { responsavel_id: vendId, loja_id: loja, titulo: "Ligar pro Paulo", descricao: "", prazo: "2026-11-20" };
     const { modelo } = modeloFalso({ ...vazia, tarefas: [tarefa, { ...tarefa, titulo: "Mandar orçamento" }] });
     await enviarMensagem(c, gerenteId, "duas tarefas", ctx(), modelo);
-    await removerProposta(c, gerenteId, "tarefa", 0, { equipe, hoje: HOJE });
+    const atual = await lerConversa(c, gerenteId, equipe, HOJE);
+    await removerProposta(c, gerenteId, "tarefa", chaveProposta("tarefa", atual.tarefas[0]), { equipe, hoje: HOJE });
     expect((await lerConversa(c, gerenteId, equipe, HOJE)).tarefas.map((t) => t.titulo)).toEqual(["Mandar orçamento"]);
     const semVendedora = equipe.filter((p) => p.id !== vendId);
     expect((await lerConversa(c, gerenteId, semVendedora, HOJE)).tarefas).toEqual([]);
@@ -115,5 +120,64 @@ describe("memórias", () => {
     ]);
     expect(r.criadas).toBe(1);
     expect(r.falhas).toEqual([expect.stringContaining("apague alguma antes")]);
+  });
+});
+
+describe("vários aparelhos e confirmação", () => {
+  const tarefa = (titulo: string) => ({ responsavel_id: "", loja_id: "", titulo, descricao: "", prazo: "2026-11-25" });
+  const comPessoa = (t: ReturnType<typeof tarefa>) => ({ ...t, responsavel_id: vendId, loja_id: loja });
+
+  test("confirmação em outro aparelho durante a resposta da IA não traz a proposta de volta", async () => {
+    const c = await entrar();
+    await novaLinha(c);
+    const { modelo: m1 } = modeloFalso({ ...vazia, tarefas: [comPessoa(tarefa("Ligar pro Paulo"))] });
+    await enviarMensagem(c, gerenteId, "uma tarefa", ctx(), m1);
+    // Enquanto a IA pensa, o outro aparelho confirma (reserva) as propostas.
+    const modelo = (async () => {
+      await reservarPropostas(await entrar(), gerenteId, { equipe, hoje: HOJE });
+      return { ...vazia, resposta: "Mais alguma coisa?", tarefas: [comPessoa(tarefa("Ligar pro Paulo"))] };
+    }) as ModeloIA;
+    await enviarMensagem(c, gerenteId, "e agora?", ctx(), modelo);
+    const depois = await lerConversa(c, gerenteId, equipe, HOJE);
+    expect(depois.tarefas).toEqual([]);
+    expect(depois.mensagens.at(-1)).toEqual({ autor: "ia", texto: "Mais alguma coisa?" });
+  });
+
+  test("tirar proposta pela chave tira a certa mesmo com a lista mudada", async () => {
+    const c = await entrar();
+    await novaLinha(c);
+    const ts = ["T1", "T2", "T3"].map((t) => comPessoa(tarefa(t)));
+    const { modelo } = modeloFalso({ ...vazia, tarefas: ts });
+    const estado = await enviarMensagem(c, gerenteId, "três", ctx(), modelo);
+    if ("erro" in estado) throw new Error(estado.erro);
+    const chaveT2 = chaveProposta("tarefa", estado.tarefas[1]);
+    await removerProposta(c, gerenteId, "tarefa", chaveProposta("tarefa", estado.tarefas[0]), { equipe, hoje: HOJE }); // outro aparelho tira T1
+    await removerProposta(c, gerenteId, "tarefa", chaveT2, { equipe, hoje: HOJE });
+    expect((await lerConversa(c, gerenteId, equipe, HOJE)).tarefas.map((t) => t.titulo)).toEqual(["T3"]);
+  });
+
+  test("reservar tira as propostas da conversa antes de criar: segunda confirmação não duplica; falhas voltam", async () => {
+    const c = await entrar();
+    await novaLinha(c);
+    const { modelo } = modeloFalso({ ...vazia, tarefas: [comPessoa(tarefa("A")), comPessoa(tarefa("B"))] });
+    await enviarMensagem(c, gerenteId, "duas", ctx(), modelo);
+    const r1 = await reservarPropostas(c, gerenteId, { equipe, hoje: HOJE });
+    expect(r1.tarefas.map((t) => t.titulo)).toEqual(["A", "B"]);
+    expect((await reservarPropostas(c, gerenteId, { equipe, hoje: HOJE })).tarefas).toEqual([]);
+    await devolverPropostas(c, gerenteId, { tarefas: [r1.tarefas[1]], leads: [], memorias: [] }, { equipe, hoje: HOJE });
+    expect((await lerConversa(c, gerenteId, equipe, HOJE)).tarefas.map((t) => t.titulo)).toEqual(["B"]);
+  });
+});
+
+describe("retrato", () => {
+  test("não lê lead fechado antigo (mesmo filtro do painel)", async () => {
+    const velho = new Date(Date.now() - 300 * 86_400_000).toISOString();
+    await admin.from("leads").insert([
+      { loja_id: loja, vendedor_id: vendId, nome: `Antigo ${sufixo}`, etapa: "vendido", valor_vendido: 100, criado_em: velho, fechado_em: velho },
+      { loja_id: loja, vendedor_id: vendId, nome: `Aberto antigo ${sufixo}`, etapa: "em_contato", criado_em: velho },
+    ]);
+    const d = await carregarRetrato(admin, [{ id: loja, nome: "Conversa", dias_lead_parado: 2 }]);
+    expect(d.leads.map((l) => l.nome)).toContain(`Aberto antigo ${sufixo}`);
+    expect(d.leads.map((l) => l.nome)).not.toContain(`Antigo ${sufixo}`);
   });
 });

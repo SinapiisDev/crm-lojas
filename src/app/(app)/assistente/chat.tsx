@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { formatarMoeda } from "@/lib/formatar";
+import { chaveProposta, type TipoProposta } from "@/lib/ia/chave";
 import type { EstadoConversa } from "@/lib/ia/conversa";
 import { ETAPAS, ORIGENS } from "@/lib/regras/leads";
 import { conversar, criarPropostas, novaConversa, tirarProposta } from "./actions";
@@ -47,9 +48,9 @@ export function ChatAssistente({
     });
   }
 
-  function tirar(tipo: "tarefa" | "lead" | "memoria", indice: number) {
+  function tirar(tipo: TipoProposta, chave: string) {
     iniciar(async () => {
-      const r = await tirarProposta(tipo, indice);
+      const r = await tirarProposta(tipo, chave);
       if ("erro" in r) setErro(r.erro);
       else setEstado(r);
     });
@@ -175,7 +176,7 @@ export function ChatAssistente({
                 <button
                   type="button"
                   aria-label={`Tirar ${l.nome}`}
-                  onClick={() => tirar("lead", i)}
+                  onClick={() => tirar("lead", chaveProposta("lead", l))}
                   className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                   <X className="size-4" />
@@ -202,7 +203,7 @@ export function ChatAssistente({
                 <button
                   type="button"
                   aria-label={`Tirar ${t.titulo}`}
-                  onClick={() => tirar("tarefa", i)}
+                  onClick={() => tirar("tarefa", chaveProposta("tarefa", t))}
                   className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                   <X className="size-4" />
@@ -226,7 +227,7 @@ export function ChatAssistente({
                 <button
                   type="button"
                   aria-label={`Tirar ${m.texto}`}
-                  onClick={() => tirar("memoria", i)}
+                  onClick={() => tirar("memoria", chaveProposta("memoria", m))}
                   className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                   <X className="size-4" />

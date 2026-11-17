@@ -122,6 +122,8 @@ const nome = (p: unknown) => (p as { nome: string } | null)?.nome ?? "—";
 export async function carregarRetrato(supabase: SupabaseClient, lojas: LojaPainel[], agora = new Date()): Promise<DadosRetrato> {
   const ids = lojas.map((l) => l.id);
   const desde30 = new Date(agora.getTime() - 30 * DIA_MS).toISOString();
+  const desde60 = new Date(agora.getTime() - 60 * DIA_MS).toISOString();
+  const desde90 = new Date(agora.getTime() - 90 * DIA_MS).toISOString();
   const ate7 = new Date(agora.getTime() + 7 * DIA_MS).toISOString();
   const desde7 = new Date(agora.getTime() - 7 * DIA_MS).toISOString();
   const [leads, eventos, tarefas, reunioes, membros, memorias] = await Promise.all([
@@ -129,6 +131,9 @@ export async function carregarRetrato(supabase: SupabaseClient, lojas: LojaPaine
       .from("leads")
       .select("id, nome, loja_id, vendedor_id, etapa, tipo, origem, valor_estimado, valor_vendido, criado_em, fechado_em, ultimo_contato_em, perfis!leads_vendedor_id_fkey(nome)")
       .in("loja_id", ids)
+      // Mesmo recorte do painel: abertos + criados nos últimos 90 dias (origem) + fechados nos últimos 60 (vendas e mês anterior).
+      .or(`etapa.in.(novo,em_contato,orcamento_enviado,negociacao),criado_em.gte.${desde90},fechado_em.gte.${desde60}`)
+      .order("criado_em", { ascending: false })
       .limit(LIMITE_LEADS),
     supabase
       .from("lead_eventos")

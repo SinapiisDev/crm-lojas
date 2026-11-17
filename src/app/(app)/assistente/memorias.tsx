@@ -7,8 +7,10 @@ import { apagarMemoria } from "./actions";
 export type MemoriaLoja = { id: string; texto: string; loja: string };
 
 // O que o Assistente "aprendeu" da loja (confirmado pela gerência). Apagar tira da próxima conversa.
+// Lista vem sempre do servidor (memória confirmada no chat aparece ao revalidar); só a remoção é otimista.
 export function MemoriasDaLoja({ inicial }: { inicial: MemoriaLoja[] }) {
-  const [memorias, setMemorias] = useState(inicial);
+  const [apagadas, setApagadas] = useState<string[]>([]);
+  const memorias = inicial.filter((m) => !apagadas.includes(m.id));
   const [erro, setErro] = useState("");
   const [, iniciar] = useTransition();
   return (
@@ -33,7 +35,7 @@ export function MemoriasDaLoja({ inicial }: { inicial: MemoriaLoja[] }) {
                 iniciar(async () => {
                   const r = await apagarMemoria(m.id);
                   if ("erro" in r) setErro(r.erro);
-                  else setMemorias((lista) => lista.filter((x) => x.id !== m.id));
+                  else setApagadas((ids) => [...ids, m.id]);
                 })
               }
               className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"

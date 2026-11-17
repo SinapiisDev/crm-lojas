@@ -124,3 +124,18 @@ test("gerência vê e apaga a memória da loja", async ({ page }) => {
   await page.reload();
   await expect(page.getByRole("region", { name: "Memória da loja" }).getByText(texto)).toHaveCount(0);
 });
+
+test("lista de memória acompanha o servidor (memória nova aparece sem recarregar)", async ({ page }) => {
+  const loja = await lojaNova("Memoria2");
+  const g = await criarUsuario(`Ger ${sufixo()}`, [[loja.id, "gerente"]]);
+  const velha = `Regra velha ${sufixo()}`;
+  const nova = `Regra nova ${sufixo()}`;
+  await admin.from("memorias_ia").insert({ loja_id: loja.id, texto: velha, criado_por: g.id });
+  await entrar(page, g.email, undefined, "/assistente");
+  const secao = page.getByRole("region", { name: "Memória da loja" });
+  await expect(secao.getByText(velha)).toBeVisible();
+  await admin.from("memorias_ia").insert({ loja_id: loja.id, texto: nova, criado_por: g.id });
+  await secao.getByRole("button", { name: `Apagar ${velha}` }).click(); // apagar revalida a página
+  await expect(secao.getByText(nova)).toBeVisible();
+  await expect(secao.getByText(velha)).toHaveCount(0);
+});
